@@ -24,7 +24,7 @@ async function main() {
     console.log(`Found ${records.length} records in setting.csv`);
 
     let count = 0;
-    for (const record of records) {
+    for (const record of records as any[]) {
         const { type, value } = record;
 
         if (!type) {
