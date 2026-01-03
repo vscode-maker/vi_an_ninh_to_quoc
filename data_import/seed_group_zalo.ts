@@ -24,7 +24,7 @@ async function main() {
     console.log(`Found ${records.length} records in group_zalo.csv`);
 
     let count = 0;
-    for (const record of records) {
+    for (const record of records as any[]) {
         // Map CSV fields to Prisma model
         // CSV: group_id, name, avatar, group_link, group_description, total_member, status
         // Prisma: groupId, name, avatar, groupLink, groupDescription, totalMember, status
