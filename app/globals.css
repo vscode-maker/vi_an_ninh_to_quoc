@@ -1,26 +1,57 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+    --background: #ffffff;
+    --foreground: #171717;
+    --primary-color: #2e7d32;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+    color: var(--foreground);
+    background: var(--background);
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Ensure Ant Design doesn't conflict too much */
+.ant-layout-sider {
+    /* background: transparent !important; - Removed to allow inline style gradient */
+}
+
+/* Force background for modern sidebar to ensure gradient shows */
+.modern-sidebar.ant-layout-sider {
+    background: linear-gradient(180deg, #1b5e20 0%, #2e7d32 100%) !important;
+}
+
+.modern-sidebar .ant-layout-sider-children {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Sidebar Text & Icon Styling */
+.modern-sidebar .ant-menu {
+    background: transparent !important;
+    color: #fff !important;
+}
+
+.modern-sidebar .ant-menu-item {
+    color: #fff !important;
+}
+
+.modern-sidebar .ant-menu-item a {
+    color: #fff !important;
+}
+
+.modern-sidebar .ant-menu-item-selected {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    color: #fff !important;
+}
+
+.modern-sidebar .ant-menu-item-icon {
+    color: #fff !important;
+}
+
+.modern-sidebar .ant-typography {
+    color: #fff !important;
 }

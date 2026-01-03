@@ -1,0 +1,117 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String  @id
+  soHieu      String  @unique @map("so_hieu")
+  fullName    String  @map("ho_va_ten")
+  gender      String? @map("gioi_tinh")
+  phoneNumber String? @map("so_dien_thoai")
+  unit        String? @map("don_vi")
+  team        String? @map("doi")
+  group       String? @map("to")
+  position    String? @map("chuc_vu")
+  title       String? @map("chuc_danh")
+  email       String?
+  zaloId      String? @map("user_id_zalo")
+  password    String
+  avatar      String?
+  groupIds    String? @map("group_id") // Stores comma separated IDs
+  role        String  @map("vai_tro")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  recordedTasks Task[] // Opposite relation field
+
+  @@map("users")
+}
+
+model Task {
+  id              String    @id
+  requestDate     DateTime? @map("ngay_gio_ghi_chu")
+  requesterName   String?   @map("ten_nguoi_ghi_chu")
+  groupName       String?   @map("nhom")
+  targetName      String?   @map("ho_ten_doi_tuong")
+  accountName     String?   @map("ten_tai_khoan")
+  accountNumber   String?   @map("so_tai_khoan")
+  bankName        String?   @map("ngan_hang")
+  phoneNumber     String?   @map("so_dien_thoai")
+  carrier         String?   @map("nha_mang")
+  documentInfo    String?   @map("thong_tin_van_ban")
+  executionUnit   String?   @map("don_vi_thuc_hien")
+  content         String?   @map("noi_dung")
+  deadline        DateTime? @map("thoi_han")
+  progressWarning String?   @map("canh_bao_tien_do")
+  requestType     String?   @map("yeu_cau")
+  status          String?   @map("trang_thai")
+  notes           Json?     @map("ghi_chu")
+  attachments     Json?     @map("dinh_kem") // [{ name, url, fileId, mimeType }]
+  groupId         String?   @map("group_id")
+  qrCode          String?   @map("qr_code")
+  socialAccountName String? @map("ten_tai_khoan_mxh")
+  moreInfo        Json?     @map("thong_tin_them")
+  
+  // New Relation to User via soHieu
+  recorderId      String?   @map("id_nguoi_ghi_chu")
+  recorder        User?     @relation(fields: [recorderId], references: [soHieu])
+
+  fileAttachments FileAttach[] // Relation to FileAttach
+
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([status, updatedAt])
+  @@index([groupId, status])
+  @@map("cong_viec")
+}
+
+model FileAttach {
+  fileId      String    @id @map("id_file")
+  taskId      String?   @map("id_unique") // Optional relation in case task doesn't exist
+  fileName    String?   @map("name_file")
+  note        String?   @map("ghi_chu")
+  groupId     String?   @map("id")
+  updatedAt   DateTime? @map("ngay_update")
+  fileLink    String?   @map("link_file")
+  fileType    String?   @map("loai_file")
+  moreInfo    Json?     @map("thong_tin_them")
+
+  // Relation to Task (optional enforced)
+  // task        Task?     @relation(fields: [taskId], references: [id]) 
+  // Disable relation enforcement for now to allow import even if parent task missing, or handle in code?
+  // Prisma relations require the parent to exist. 
+  // Let's rely on standard relation but map it.
+  task        Task?     @relation(fields: [taskId], references: [id])
+
+  @@map("file_attach")
+}
+
+model Setting {
+  id    Int     @id @default(autoincrement())
+  type  String  @map("type")
+  value String  @map("value") @db.Text
+
+  @@map("setting")
+}
+
+model GroupZalo {
+  groupId          String  @id @map("group_id")
+  name             String  @map("name")
+  avatar           String? @map("avatar")
+  groupLink        String? @map("group_link")
+  groupDescription String? @map("group_description")
+  totalMember      Int?    @map("total_member")
+  status           String? @map("status")
+
+  @@map("group_zalo")
+}
