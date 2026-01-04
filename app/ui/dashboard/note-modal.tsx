@@ -27,6 +27,7 @@ interface DisplayNote {
 }
 
 const NoteModal = ({ visible, onCancel, task, onTaskUpdate }: NoteModalProps) => {
+    const [messageApi, contextHolder] = message.useMessage();
     const [newNote, setNewNote] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [displayNotes, setDisplayNotes] = useState<DisplayNote[]>([]);
@@ -88,7 +89,7 @@ const NoteModal = ({ visible, onCancel, task, onTaskUpdate }: NoteModalProps) =>
 
     const handleSave = async () => {
         if (!newNote.trim()) {
-            message.warning('Vui lòng nhập nội dung ghi chú');
+            messageApi.warning('Vui lòng nhập nội dung ghi chú');
             return;
         }
 
@@ -118,13 +119,13 @@ const NoteModal = ({ visible, onCancel, task, onTaskUpdate }: NoteModalProps) =>
             // Call server
             const result = await addTaskNote(task.id, currentContent);
             if (result.success) {
-                message.success('Đã lưu ghi chú');
+                messageApi.success('Đã lưu ghi chú');
             } else {
-                message.error(result.message);
+                messageApi.error(result.message);
             }
         } catch (error) {
             console.error('Save note error:', error);
-            message.error('Có lỗi xảy ra khi lưu ghi chú');
+            messageApi.error('Có lỗi xảy ra khi lưu ghi chú');
         } finally {
             setSubmitting(false);
         }
@@ -143,7 +144,7 @@ const NoteModal = ({ visible, onCancel, task, onTaskUpdate }: NoteModalProps) =>
 
     const saveEdit = async (noteId: string) => {
         if (!editingContent.trim()) {
-            message.warning('Nội dung không được để trống');
+            messageApi.warning('Nội dung không được để trống');
             return;
         }
 
@@ -158,7 +159,7 @@ const NoteModal = ({ visible, onCancel, task, onTaskUpdate }: NoteModalProps) =>
 
         const result = await updateTaskNote(task.id, noteId, editingContent);
         if (result.success) {
-            message.success('Đã cập nhật');
+            messageApi.success('Đã cập nhật');
             // Refreshing the whole task might be needed to get synced state, BUT
             // onTaskUpdate isn't really a "fetch" it's a local state setter.
             // Ideally we should re-fetch or construct the exact new array to pass to onTaskUpdate.
@@ -170,7 +171,7 @@ const NoteModal = ({ visible, onCancel, task, onTaskUpdate }: NoteModalProps) =>
             // This is tricky without knowing exact structure but we can try mapping back.
             // Simpler to just trigger a router refresh or rely on message.
         } else {
-            message.error(result.message);
+            messageApi.error(result.message);
             setDisplayNotes(oldNotes); // Rollback
         }
     };
@@ -184,11 +185,11 @@ const NoteModal = ({ visible, onCancel, task, onTaskUpdate }: NoteModalProps) =>
 
         const result = await deleteTaskNote(task.id, noteId);
         if (result.success) {
-            message.success('Đã xóa ghi chú');
+            messageApi.success('Đã xóa ghi chú');
             // Update Parent
             // Similarly difficult to exact match raw structure without fetching.
         } else {
-            message.error(result.message);
+            messageApi.error(result.message);
             setDisplayNotes(oldNotes);
         }
     };
@@ -214,7 +215,7 @@ const NoteModal = ({ visible, onCancel, task, onTaskUpdate }: NoteModalProps) =>
                 body: { padding: 0 }
             }}
         >
-
+            {contextHolder}
 
             {/* Custom Header */}
             <div style={{

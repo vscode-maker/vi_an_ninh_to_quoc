@@ -1,21 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Row, Col, Typography, Button, message, Modal, Tooltip } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Row, Col, Typography, Button, message, Modal, Tooltip, Input } from 'antd';
+import { PlusOutlined, SearchOutlined, CloseOutlined } from '@ant-design/icons';
+import { useDebouncedCallback } from 'use-debounce';
 import type { Task } from '@prisma/client';
-import {
-    DndContext,
-    DragOverlay,
-    useSensor,
-    useSensors,
-    PointerSensor,
-    DragStartEvent,
-    DragEndEvent,
-    defaultDropAnimationSideEffects,
-    DropAnimation,
-    DragOverEvent,
-} from '@dnd-kit/core';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 
 import VirtualizedColumn from './virtualized-column';
@@ -33,14 +22,6 @@ interface KanbanBoardProps {
     tasks: Task[];
     initialCounts: { [key: string]: number };
 }
-
-const dropAnimation: DropAnimation = {
-    sideEffects: defaultDropAnimationSideEffects({
-        styles: {
-            active: { opacity: '1' },
-        },
-    }),
-};
 
 // Helper to group tasks
 const groupTasks = (taskList: Task[]) => ({
@@ -65,27 +46,27 @@ export default function KanbanBoard({ tasks: initialTasks, initialCounts }: Kanb
 
     // Active Item State
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-    const [activeId, setActiveId] = useState<string | null>(null); // For Dragging
-    const [activeTask, setActiveTask] = useState<Task | null>(null); // Snapshot for DragOverlay
     const [recentlyUpdatedTaskId, setRecentlyUpdatedTaskId] = useState<string | null>(null);
 
     // Filter / Search
     const searchParams = useSearchParams();
     const pathname = usePathname();
     const { replace } = useRouter();
+    const [isSearchVisible, setIsSearchVisible] = useState(false);
+
+    const handleSearch = useDebouncedCallback((term: string) => {
+        const params = new URLSearchParams(searchParams);
+        if (term) {
+            params.set('query', term);
+        } else {
+            params.delete('query');
+        }
+        replace(`${pathname}?${params.toString()}`);
+    }, 300);
 
     // Mobile Tabs
     const [activeMobileTab, setActiveMobileTab] = useState('todo');
     const [isMobile, setIsMobile] = useState(false);
-
-    // Sensors
-    const sensors = useSensors(
-        useSensor(PointerSensor, {
-            activationConstraint: {
-                distance: 5,
-            },
-        })
-    );
 
     // Sync Props (when Search or Initial Load changes)
     useEffect(() => {
@@ -100,8 +81,6 @@ export default function KanbanBoard({ tasks: initialTasks, initialCounts }: Kanb
         window.addEventListener('resize', checkMobile);
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
-
-    // --- Search Handler (Handled by URL Params) ---
 
     // --- Task Actions ---
 
@@ -226,116 +205,6 @@ export default function KanbanBoard({ tasks: initialTasks, initialCounts }: Kanb
         }
     }, [columns, counts]);
 
-    // --- Drag and Drop ---
-
-    const handleDragStart = useCallback((event: DragStartEvent) => {
-        const { active } = event;
-        setActiveId(active.id as string);
-        // Find the task object for the overlay
-        const task = Object.values(columns).flat().find(t => t.id === active.id);
-        if (task) setActiveTask(task);
-    }, [columns]);
-
-    const handleDragOver = useCallback((event: DragOverEvent) => {
-        const { active, over } = event;
-        if (!over) return;
-
-        const activeId = active.id as string;
-        const overId = over.id as string;
-
-        // Find active container (column)
-        const findContainer = (id: string): string | undefined => {
-            if (id in columns) return id;
-            return Object.keys(columns).find(key => columns[key].some(t => t.id === id));
-        };
-
-        const activeContainer = findContainer(activeId);
-        const overContainer = findContainer(overId);
-
-        if (!activeContainer || !overContainer || activeContainer === overContainer) {
-            return;
-        }
-
-        // Active task
-        const activeItem = columns[activeContainer].find(t => t.id === activeId);
-        if (!activeItem) return;
-
-        // Determine new status based on overContainer
-        let newStatus = COLUMN_STATUSES.todo.value;
-        if (overContainer === 'pending') newStatus = COLUMN_STATUSES.pending.value;
-        if (overContainer === 'done') newStatus = COLUMN_STATUSES.done.value;
-
-        // Optimistic Move
-        setColumns((prev) => {
-            const activeItems = prev[activeContainer];
-            const overItems = prev[overContainer];
-            const activeIndex = activeItems.findIndex(t => t.id === activeId);
-
-            const newItem = {
-                ...activeItems[activeIndex],
-                status: newStatus
-            };
-
-            let newOverItems = [...overItems];
-            const isOverColumn = overId === overContainer;
-            if (isOverColumn) {
-                newOverItems = [newItem, ...overItems];
-            } else {
-                newOverItems = [newItem, ...overItems];
-            }
-
-            return {
-                ...prev,
-                [activeContainer]: prev[activeContainer].filter(t => t.id !== activeId),
-                [overContainer]: newOverItems
-            };
-        });
-    }, [columns]);
-
-    const handleDragEnd = useCallback(async (event: DragEndEvent) => {
-        const { active, over } = event;
-        const id = active.id as string;
-        setActiveId(null);
-        setActiveTask(null);
-
-        if (!over) return;
-
-        if (!activeTask) return;
-
-        const findContainer = (itemId: string) =>
-            Object.keys(columns).find(key => columns[key].some(t => t.id === itemId));
-
-        const finalContainer = findContainer(id);
-
-        if (finalContainer) {
-            let newStatus = '';
-            if (finalContainer === 'todo') newStatus = COLUMN_STATUSES.todo.value;
-            else if (finalContainer === 'pending') newStatus = COLUMN_STATUSES.pending.value;
-            else if (finalContainer === 'done') newStatus = COLUMN_STATUSES.done.value;
-
-            // Check against ORIGINAL status
-            if (activeTask.status !== newStatus) {
-                // API Call
-                setRecentlyUpdatedTaskId(id);
-                setTimeout(() => setRecentlyUpdatedTaskId(null), 2000);
-
-                setCounts(prev => ({
-                    ...prev,
-                    [activeTask.status || 'Chưa thực hiện']: Math.max(0, (prev[activeTask.status || 'Chưa thực hiện'] || 0) - 1),
-                    [newStatus]: (prev[newStatus] || 0) + 1
-                }));
-
-                messageApi.success('Đã cập nhật trạng thái');
-
-                const result = await updateTaskStatus(id, newStatus);
-                if (!result.success) {
-                    messageApi.error('Cập nhật thất bại');
-                }
-            }
-        }
-
-    }, [activeTask, columns, messageApi]);
-
     return (
         <div style={{ height: 'calc(100vh - 64px)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             {contextHolder}
@@ -345,61 +214,100 @@ export default function KanbanBoard({ tasks: initialTasks, initialCounts }: Kanb
                     <Title level={4} style={{ margin: 0, color: '#333', fontSize: 20 }}>Quản lý tiến độ</Title>
                     <Text type="secondary" style={{ fontSize: 13 }}>Theo dõi và cập nhật trạng thái công việc</Text>
                 </div>
-                <Tooltip title="Thêm công việc mới">
-                    <Button
-                        type="primary" icon={<PlusOutlined />} size="large" onClick={() => setIsCreateModalOpen(true)}
-                        style={{ background: '#52c41a', borderColor: '#52c41a', boxShadow: '0 4px 14px rgba(82, 196, 26, 0.4)', borderRadius: 8, fontWeight: 500 }}
-                    >
-                        Thêm mới
-                    </Button>
-                </Tooltip>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    {/* Search Input */}
+                    {isSearchVisible ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, animation: 'fadeIn 0.3s' }}>
+                            <Input
+                                prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
+                                placeholder="Tìm kiếm công việc..."
+                                style={{
+                                    width: 250,
+                                    borderRadius: 8, // Matching button radius
+                                    background: '#fff',
+                                    border: '1px solid #d9d9d9',
+                                    transition: 'width 0.3s ease'
+                                }}
+                                onChange={(e) => handleSearch(e.target.value)}
+                                defaultValue={searchParams.get('query')?.toString()}
+                                autoFocus
+                            />
+                            <Button
+                                type="text"
+                                shape="circle"
+                                icon={<CloseOutlined style={{ color: '#999' }} />}
+                                onClick={() => setIsSearchVisible(false)}
+                            />
+                        </div>
+                    ) : (
+                        <Tooltip title="Tìm kiếm">
+                            <Button
+                                type="primary"
+                                shape="circle"
+                                icon={<SearchOutlined />}
+                                onClick={() => setIsSearchVisible(true)}
+                                style={{
+                                    background: 'linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%)',
+                                    border: 'none',
+                                    boxShadow: '0 4px 12px rgba(27, 94, 32, 0.4)',
+                                    color: '#fff',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                }}
+                            />
+                        </Tooltip>
+                    )}
+
+                    <Tooltip title="Thêm công việc mới">
+                        <Button
+                            type="primary"
+                            shape="circle"
+                            icon={<PlusOutlined />}
+                            onClick={() => setIsCreateModalOpen(true)}
+                            style={{
+                                background: 'linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%)',
+                                border: 'none',
+                                boxShadow: '0 4px 12px rgba(27, 94, 32, 0.4)',
+                                color: '#fff',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}
+                        />
+                    </Tooltip>
+                </div>
             </div>
 
-            <DndContext
-                id="kanban-dnd-context"
-                sensors={sensors}
-                onDragStart={handleDragStart}
-                onDragOver={handleDragOver}
-                onDragEnd={handleDragEnd}
-            >
-                <Row gutter={[16, 16]} style={{ flex: 1, padding: '0 16px 16px 16px', margin: 0, display: 'flex', alignItems: 'stretch' }}>
-                    {Object.entries(COLUMN_STATUSES).map(([key, col]) => {
-                        const isActive = activeMobileTab === key;
-                        if (isMobile && !isActive) return null;
+            {/* Main Content - No DnD Context */}
+            <Row gutter={[16, 16]} style={{ flex: 1, padding: '0 16px 16px 16px', margin: 0, display: 'flex', alignItems: 'stretch' }}>
+                {Object.entries(COLUMN_STATUSES).map(([key, col]) => {
+                    const isActive = activeMobileTab === key;
+                    if (isMobile && !isActive) return null;
 
-                        const tasks = columns[key] || [];
-                        const totalCount = counts[col.value] || 0;
+                    const tasks = columns[key] || [];
+                    const totalCount = counts[col.value] || 0;
 
-                        return (
-                            <Col xs={24} md={8} key={key} style={{ height: '100%' }}>
-                                <VirtualizedColumn
-                                    id={key}
-                                    column={col}
-                                    tasks={tasks}
-                                    totalCount={totalCount}
-                                    onLoadMore={() => handleLoadMore(key)}
-                                    onEdit={handleEditTask}
-                                    onView={handleViewTask}
-                                    onUpload={handleUpload}
-                                    onAddNote={handleAddNote}
-                                    onTaskUpdate={handleTaskUpdate}
-                                    onDelete={handleDeleteTask}
-                                    recentlyUpdatedTaskId={recentlyUpdatedTaskId}
-                                />
-                            </Col>
-                        );
-                    })}
-                </Row>
-
-                <DragOverlay dropAnimation={dropAnimation}>
-                    {activeTask ? (
-                        <TaskCard
-                            task={activeTask}
-                            onAction={() => { }} onView={() => { }} onUpload={() => { }} onAddNote={() => { }} onTaskUpdate={() => { }} onDelete={() => { }}
-                        />
-                    ) : null}
-                </DragOverlay>
-            </DndContext>
+                    return (
+                        <Col xs={24} md={8} key={key} style={{ height: '100%' }}>
+                            <VirtualizedColumn
+                                id={key}
+                                column={col}
+                                tasks={tasks}
+                                totalCount={totalCount}
+                                onLoadMore={() => handleLoadMore(key)}
+                                onEdit={handleEditTask}
+                                onView={handleViewTask}
+                                onUpload={handleUpload}
+                                onAddNote={handleAddNote}
+                                onTaskUpdate={handleTaskUpdate}
+                                onDelete={handleDeleteTask}
+                                recentlyUpdatedTaskId={recentlyUpdatedTaskId}
+                            />
+                        </Col>
+                    );
+                })}
+            </Row>
 
             {/* Modals */}
             <Modal title="Thêm mới công việc" open={isCreateModalOpen} onCancel={() => setIsCreateModalOpen(false)} footer={null} width={800} destroyOnHidden>

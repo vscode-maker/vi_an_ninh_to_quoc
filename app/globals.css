@@ -19,39 +19,96 @@ body {
     /* background: transparent !important; - Removed to allow inline style gradient */
 }
 
-/* Force background for modern sidebar to ensure gradient shows */
-.modern-sidebar.ant-layout-sider {
-    background: linear-gradient(180deg, #1b5e20 0%, #2e7d32 100%) !important;
+/* Force background for custom sidebar */
+.custom-sidebar-white.ant-layout-sider {
+    background: #ffffff !important;
 }
 
-.modern-sidebar .ant-layout-sider-children {
+.custom-sidebar-white .ant-layout-sider-children {
     display: flex;
     flex-direction: column;
+    height: 100%;
 }
 
 /* Sidebar Text & Icon Styling */
-.modern-sidebar .ant-menu {
+.custom-sidebar-white .ant-menu {
     background: transparent !important;
-    color: #fff !important;
+    color: #000000 !important;
 }
 
-.modern-sidebar .ant-menu-item {
-    color: #fff !important;
+.custom-sidebar-white .ant-menu-item {
+    color: #000000 !important;
 }
 
-.modern-sidebar .ant-menu-item a {
-    color: #fff !important;
+.custom-sidebar-white .ant-menu-item a {
+    color: #000000 !important;
 }
 
-.modern-sidebar .ant-menu-item-selected {
-    background-color: rgba(255, 255, 255, 0.2) !important;
-    color: #fff !important;
+.custom-sidebar-white .ant-menu-item-selected {
+    background-color: #e8f5e9 !important;
+    /* Light green for selection */
+    color: #1b5e20 !important;
+    font-weight: 600;
 }
 
-.modern-sidebar .ant-menu-item-icon {
-    color: #fff !important;
+/* Default Icon Color: Black */
+.custom-sidebar-white .ant-menu-item .anticon {
+    color: #000000 !important;
 }
 
-.modern-sidebar .ant-typography {
-    color: #fff !important;
+/* Selected Icon Color: Green */
+/* Selected Icon Color: Black (Like Text) */
+.custom-sidebar-white .ant-menu-item-selected .anticon {
+    color: #000000 !important;
+}
+
+.custom-sidebar-white .ant-typography {
+    color: #000000 !important;
+}
+
+/* Sidebar Item Hover Effect */
+.custom-sidebar-white .ant-menu-item:hover {
+    background-color: #e8f5e9 !important;
+    /* Light Green 50 */
+    color: #1b5e20 !important;
+    /* Dark Green */
+}
+
+/* Hover on Selected Item - Slightly Darker to show effect */
+.custom-sidebar-white .ant-menu-item-selected:hover {
+    background-color: #c8e6c9 !important;
+    /* Green 100 */
+}
+
+.custom-sidebar-white .ant-menu-item:hover .anticon {
+    color: #1b5e20 !important;
+}
+
+.custom-sidebar-white .ant-menu-item:hover a {
+    color: #1b5e20 !important;
+}
+
+/* Collapsed Sidebar Icon - Circular Shape */
+.custom-sidebar-white .ant-menu-inline-collapsed .ant-menu-item {
+    padding: 0 !important;
+    /* Remove padding to enforce flex centering */
+    width: 40px !important;
+    height: 40px !important;
+    margin: 4px auto !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.custom-sidebar-white .ant-menu-inline-collapsed .ant-menu-item .ant-menu-item-icon {
+    min-width: unset !important;
+    margin-right: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.custom-sidebar-white .ant-menu-inline-collapsed .ant-menu-item .ant-menu-title-content {
+    display: none !important;
 }

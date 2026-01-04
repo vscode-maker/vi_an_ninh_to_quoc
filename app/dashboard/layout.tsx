@@ -41,7 +41,7 @@ export default function DashboardLayout({
             {/* Global Header */}
             <DashboardHeader collapsed={collapsed} setCollapsed={setCollapsed} />
 
-            <Layout hasSider style={{ marginTop: 64 }}> {/* Offset for fixed header */}
+            <Layout hasSider style={{ marginTop: 55 }}> {/* Offset for fixed header */}
                 <SideNav collapsed={collapsed} setCollapsed={setCollapsed} isMobile={isMobile} />
 
                 <Layout
@@ -49,7 +49,7 @@ export default function DashboardLayout({
                     style={{
                         display: 'flex',
                         flexDirection: 'column',
-                        marginLeft: isMobile ? 0 : (collapsed ? 80 : 260),
+                        marginLeft: isMobile ? 0 : (collapsed ? 55 : 260),
                         transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                         background: '#f0f2f5'
                     }}

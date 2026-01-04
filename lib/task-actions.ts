@@ -82,6 +82,7 @@ export async function createTask(prevState: any, formData: FormData) {
             bankName: rawData.bankName as string || null,
             phoneNumber: rawData.phoneNumber as string || null,
             carrier: rawData.carrier as string || null,
+            executionUnit: rawData.executionUnit as string || null,
             documentInfo: rawData.documentInfo as string || null,
             qrCode: rawData.qrCode as string || null,
             socialAccountName: rawData.socialAccountName as string || null,

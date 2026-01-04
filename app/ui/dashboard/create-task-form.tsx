@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Form, Input, DatePicker, Select, Button, Row, Col, Typography, message, Upload, Card } from 'antd';
 import { UploadOutlined, PlusOutlined, CloseOutlined, UserOutlined } from '@ant-design/icons';
 import { createTask, getExecutionUnits, getZaloGroups } from '@/lib/task-actions';
+import { VIETNAM_BANKS } from '@/lib/constants';
 
 const { Option, OptGroup } = Select;
 const { Text, Title } = Typography;
@@ -40,15 +41,26 @@ const CreateTaskForm = React.memo(function CreateTaskForm({ onSuccess }: CreateT
         const formData = new FormData();
 
         // Basic fields
+
         Object.keys(values).forEach(key => {
             if (key !== 'files' && key !== 'relatedPeople' && values[key] !== undefined && values[key] !== null) {
                 if (key === 'deadline' && values[key]) {
                     formData.append(key, values[key].toISOString());
-                } else {
+                } else if (key === 'executionUnit' && Array.isArray(values[key])) {
+                    // Join multiple execution units into a single string
+                    formData.append(key, values[key].join(', '));
+                } else if (key !== 'executionUnit') {
+                    // Start of regular string/number/other fields logic
+                    // If it was executionUnit (not array? shouldn't happen with multi-select but good to be safe)
+                    // we skip it here because handled above?
+                    // actually if it's NOT array (single value), let it pass?
+                    // But with mode="multiple", value is always array.
+                    // Let's rely on else if logic:
                     formData.append(key, values[key]);
                 }
             }
         });
+
 
         // Add hardcoded status if not present
         if (!values.status) {
@@ -159,7 +171,14 @@ const CreateTaskForm = React.memo(function CreateTaskForm({ onSuccess }: CreateT
                 </Row>
 
                 <Form.Item name="executionUnit" label="Đơn vị Thực Hiện">
-                    <Select placeholder="Chọn đơn vị thực hiện..." showSearch optionFilterProp="children" size="large">
+                    <Select
+                        placeholder="Chọn đơn vị thực hiện..."
+                        showSearch
+                        optionFilterProp="children"
+                        size="large"
+                        mode="multiple"
+                        allowClear
+                    >
                         {executionUnits.map((unit) => (
                             <Option key={unit} value={unit}>{unit}</Option>
                         ))}
@@ -178,7 +197,26 @@ const CreateTaskForm = React.memo(function CreateTaskForm({ onSuccess }: CreateT
                         <Text strong style={{ display: 'block', marginBottom: 12 }}>Thông tin ngân hàng:</Text>
                         <Row gutter={16}>
                             <Col span={8}><Form.Item name="accountNumber" label="Số tài khoản"><Input /></Form.Item></Col>
-                            <Col span={8}><Form.Item name="bankName" label="Ngân hàng"><Input /></Form.Item></Col>
+                            <Col span={8}>
+                                <Form.Item name="bankName" label="Ngân hàng">
+                                    <Select
+                                        placeholder="Chọn ngân hàng"
+                                        showSearch
+                                        optionFilterProp="children"
+                                        allowClear
+                                        filterOption={(input, option) =>
+                                            (option?.children as unknown as string).toLowerCase().includes(input.toLowerCase()) ||
+                                            (option?.value as unknown as string).toLowerCase().includes(input.toLowerCase())
+                                        }
+                                    >
+                                        {VIETNAM_BANKS.map(bank => (
+                                            <Option key={bank.shortName} value={`${bank.shortName} - ${bank.name}`}>
+                                                {bank.shortName} - {bank.name}
+                                            </Option>
+                                        ))}
+                                    </Select>
+                                </Form.Item>
+                            </Col>
                             <Col span={8}><Form.Item name="accountName" label="Tên chủ TK"><Input /></Form.Item></Col>
                         </Row>
                     </div>
@@ -217,7 +255,7 @@ const CreateTaskForm = React.memo(function CreateTaskForm({ onSuccess }: CreateT
                 )}
             </div>
 
-            {/* 4. Nội Dung & Đính Kèm */}
+            {/* 4. Nội Dung & Đính Kèm - HIDDEN AS REQUESTED
             <div style={{ marginBottom: 24, padding: 16, border: '1px solid #f0f0f0', borderRadius: 8 }}>
                 <Title level={5} style={{ color: '#52c41a', display: 'flex', alignItems: 'center', gap: 8 }}>
                     4. Nội Dung & Đính Kèm
@@ -233,7 +271,6 @@ const CreateTaskForm = React.memo(function CreateTaskForm({ onSuccess }: CreateT
                     </Upload>
                 </Form.Item>
 
-                {/* Related People Section */}
                 <div style={{ background: '#f9f9f9', padding: 16, borderRadius: 8, marginTop: 16 }}>
                     <Text strong style={{ display: 'block', marginBottom: 16 }}><UserOutlined /> Thông tin đối tượng liên quan (Optional)</Text>
                     <Form.List name="relatedPeople">
@@ -301,11 +338,12 @@ const CreateTaskForm = React.memo(function CreateTaskForm({ onSuccess }: CreateT
                     </Form.List>
                 </div>
             </div>
+            */}
 
             {/* 5. Trạng Thái */}
             <div style={{ marginBottom: 24, padding: 16, border: '1px solid #f0f0f0', borderRadius: 8 }}>
                 <Title level={5} style={{ color: '#52c41a', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    5. Trạng Thái
+                    4. Trạng Thái
                 </Title>
                 <Form.Item name="status" label="Trạng Thái" rules={[{ required: true }]}>
                     <Select size="large">

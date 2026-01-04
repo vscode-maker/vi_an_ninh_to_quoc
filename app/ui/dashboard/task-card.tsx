@@ -146,7 +146,15 @@ const TaskCard = React.memo(function TaskCard({ task, onAction, onView, onUpload
                 </Title>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#8c8c8c', fontSize: 13 }}>
                     <UserOutlined />
-                    <Text type="secondary">{task.requesterName}</Text>
+                    <Text type="secondary" style={{ marginRight: 8 }}>{task.requesterName}</Text>
+
+                    {task.executionUnit && (
+                        <>
+                            <div style={{ width: 1, height: 12, background: '#d9d9d9' }} /> {/* Separator */}
+                            <BankOutlined style={{ color: '#13c2c2' }} /> {/* Or TeamOutlined */}
+                            <Text type="secondary" style={{ color: '#13c2c2' }}>{task.executionUnit}</Text>
+                        </>
+                    )}
                 </div>
             </div>
 

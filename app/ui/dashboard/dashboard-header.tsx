@@ -1,16 +1,19 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Layout, Input, Button, Modal, Form, Select, DatePicker, message, Row, Col, Typography, Tooltip } from 'antd';
-import { SearchOutlined, SyncOutlined, PlusOutlined, MenuFoldOutlined, MenuUnfoldOutlined, CloseOutlined } from '@ant-design/icons';
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { useDebouncedCallback } from 'use-debounce';
+import Image from 'next/image';
+import { Layout, Input, Button, Modal, Form, Select, DatePicker, message, Row, Col, Typography, Tooltip, Avatar, Dropdown, MenuProps } from 'antd';
+import { useRouter } from 'next/navigation';
+import { MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined } from '@ant-design/icons';
+import { useSession } from 'next-auth/react';
 import { createTask } from '@/lib/task-actions';
 
 const { Header } = Layout;
 const { Title, Text } = Typography;
 const { Option } = Select;
-const { TextArea } = Input;
+const { TextArea } = Input; // This might be an issue if Input is removed from imports. Wait. Inner form uses Input.
+// Input is used in CreateTaskForm, so I must NOT remove Input from imports entirely.
+// I will keep Input in imports but remove Search related icons.
 
 interface DashboardHeaderProps {
     collapsed: boolean;
@@ -18,23 +21,9 @@ interface DashboardHeaderProps {
 }
 
 export default function DashboardHeader({ collapsed, setCollapsed }: DashboardHeaderProps) {
-    const searchParams = useSearchParams();
-    const pathname = usePathname();
     const { replace, refresh } = useRouter();
+    const { data: session } = useSession();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-
-    // Search Toggle State
-    const [isSearchVisible, setIsSearchVisible] = useState(false);
-
-    const handleSearch = useDebouncedCallback((term: string) => {
-        const params = new URLSearchParams(searchParams);
-        if (term) {
-            params.set('query', term);
-        } else {
-            params.delete('query');
-        }
-        replace(`${pathname}?${params.toString()}`);
-    }, 300);
 
     const handleSync = () => {
         refresh();
@@ -43,70 +32,54 @@ export default function DashboardHeader({ collapsed, setCollapsed }: DashboardHe
 
     return (
         <Header style={{
-            padding: '0 24px',
-            background: 'linear-gradient(180deg, #1b5e20 0%, #2e7d32 100%)', // Match Sidebar Green
-            backdropFilter: 'blur(12px)',
+            padding: '0 24px 0 5px', // Adjusted left padding to 5px as requested
+            background: 'linear-gradient(180deg, #1b5e20 0%, #2e7d32 100%)', // Green Gradient
+            backdropFilter: 'none',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            height: 64,
-            borderBottom: '1px solid rgba(255, 255, 255, 0.1)', // White border for dark bg
-            boxShadow: '0 4px 20px rgba(27, 94, 32, 0.15)', // Green shadow
+            height: 55,
+            borderBottom: 'none',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)', // Shadow for depth
             position: 'fixed',
             top: 0,
             left: 0,
             right: 0,
             zIndex: 1001, // Above Sidebar (1000) if full width
         }}>
-            {/* Left Section: Toggle + Title */}
+            {/* Left Section: Toggle Only */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                 <Button
                     type="text"
                     icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
                     onClick={() => setCollapsed(!collapsed)}
-                    style={{ fontSize: '16px', width: 46, height: 46, color: '#fff' }} // White icon
+                    style={{ fontSize: '24px', width: 46, height: 46, color: '#fff' }} // White icon
                 />
-
-                <Title level={4} style={{ margin: 0, color: '#fff', whiteSpace: 'nowrap', fontSize: 20 }}>
-                    CÔNG VIỆC
-                </Title>
             </div>
 
-            {/* Right Section: Search */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                {isSearchVisible ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, animation: 'fadeIn 0.3s' }}>
-                        <Input
-                            prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
-                            placeholder="Tìm kiếm công việc..."
-                            style={{
-                                width: 250,
-                                borderRadius: 20,
-                                background: '#fff', // White input
-                                border: 'none',
-                                transition: 'width 0.3s ease'
-                            }}
-                            onChange={(e) => handleSearch(e.target.value)}
-                            defaultValue={searchParams.get('query')?.toString()}
-                            autoFocus
-                        />
-                        <Button
-                            type="text"
-                            shape="circle"
-                            icon={<CloseOutlined style={{ color: '#fff' }} />} // White close icon
-                            onClick={() => setIsSearchVisible(false)}
-                        />
+            {/* Right Section: User Profile & Logout */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                        <Text strong style={{ color: '#fff', fontSize: 14 }}>
+                            {session?.user?.name || 'User'}
+                        </Text>
+                        <Text style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: 12 }}>
+                            {(session?.user as any)?.position || 'Chưa cập nhật'}
+                        </Text>
                     </div>
-                ) : (
-                    <Tooltip title="Tìm kiếm">
-                        <Button
-                            type="text"
-                            shape="circle"
-                            icon={<SearchOutlined style={{ fontSize: 18, color: '#fff' }} />} // White search icon
-                            onClick={() => setIsSearchVisible(true)}
-                        />
-                    </Tooltip>
-                )}
+                    <Avatar
+                        size={36}
+                        src={session?.user?.image}
+                        icon={!session?.user?.image && <UserOutlined />}
+                        style={{
+                            background: '#fff',
+                            color: '#1b5e20', // Green icon
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                            cursor: 'pointer'
+                        }}
+                    />
+                </div>
             </div>
 
             {/* Global Create Task Modal */}
