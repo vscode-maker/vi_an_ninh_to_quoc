@@ -34,7 +34,7 @@ const DataDonAnTable: React.FC<Props> = ({ data, total, page, pageSize }) => {
                 // Router refresh handled by action revalidate, but we might want client refresh to be sure
                 // router.refresh();
             } catch (e) {
-                alert('Xóa thất bại: ' + e.message);
+                alert('Xóa thất bại: ' + (e as any).message);
             }
         }
     };
