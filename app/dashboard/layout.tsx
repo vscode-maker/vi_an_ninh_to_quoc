@@ -8,11 +8,16 @@ import React from 'react';
 
 const { Content } = Layout;
 
+import { Suspense } from 'react';
+import Loading from './loading';
+import { usePathname } from 'next/navigation';
+
 export default function DashboardLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
+    const pathname = usePathname();
     const {
         token: { colorBgContainer, borderRadiusLG },
     } = theme.useToken();
@@ -55,7 +60,9 @@ export default function DashboardLayout({
                     }}
                 >
                     <Content style={{ margin: 0, overflow: 'hidden', flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
-                        {children}
+                        <Suspense fallback={<Loading />} key={pathname}>
+                            {children}
+                        </Suspense>
                     </Content>
                 </Layout>
             </Layout>

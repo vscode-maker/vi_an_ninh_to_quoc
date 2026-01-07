@@ -21,6 +21,8 @@ const UploadFilesModal = React.memo(function UploadFilesModal({ visible, onCance
     const [uploading, setUploading] = useState(false);
     const [form] = Form.useForm();
 
+    const [messageApi, contextHolder] = message.useMessage();
+
     React.useEffect(() => {
         if (visible) {
             form.resetFields();
@@ -34,7 +36,7 @@ const UploadFilesModal = React.memo(function UploadFilesModal({ visible, onCance
         const hasRelatedPeople = values.relatedPeople && values.relatedPeople.length > 0;
 
         if (!task || (!hasFiles && !hasRelatedPeople)) {
-            message.warning('Vui lòng chọn ít nhất 1 file hoặc nhập thông tin người liên quan');
+            messageApi.warning('Vui lòng chọn ít nhất 1 file hoặc nhập thông tin người liên quan');
             return;
         }
 
@@ -56,14 +58,14 @@ const UploadFilesModal = React.memo(function UploadFilesModal({ visible, onCance
         try {
             const result = await uploadTaskFiles(task.id, formData);
             if (result.success) {
-                message.success(result.message);
+                messageApi.success(result.message);
                 onSuccess();
             } else {
-                message.error(result.message);
+                messageApi.error(result.message);
             }
         } catch (error) {
             console.error(error);
-            message.error('Lỗi tải lên');
+            messageApi.error('Lỗi tải lên');
         } finally {
             setUploading(false);
         }
@@ -103,6 +105,7 @@ const UploadFilesModal = React.memo(function UploadFilesModal({ visible, onCance
                 </Button>,
             ]}
         >
+            {contextHolder}
             <Form form={form} layout="vertical">
                 <div style={{ marginBottom: 16 }}>
                     <Text strong><PaperClipOutlined /> Chọn file:</Text>

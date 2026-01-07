@@ -14,19 +14,19 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXTAUTH_URL || 'http://localhost:3000'),
-  title: "VANTQ - Hệ thống Quản lý PC01",
+  title: "PC01 SYSTEM - Hệ thống Quản lý PC01",
   description: "Hệ thống quản lý công việc và tiến độ PC01",
   openGraph: {
-    title: "VANTQ - Hệ thống Quản lý PC01",
+    title: "PC01 SYSTEM - Hệ thống Quản lý PC01",
     description: "Theo dõi và cập nhật trạng thái công việc",
     url: '/',
-    siteName: 'VANTQ System',
+    siteName: 'PC01 SYSTEM',
     images: [
       {
         url: '/images/logo.png',
         width: 800,
         height: 600,
-        alt: 'Logo VANTQ',
+        alt: 'Logo PC01',
       },
     ],
     locale: 'vi_VN',
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   },
 };
 
-import { auth } from "@/auth";
+// import { auth } from "@/auth"; // Remove
 import { Providers } from "./providers";
 
 import { AntdRegistry } from '@ant-design/nextjs-registry';
@@ -45,7 +45,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await auth();
+  // const session = await auth(); // Remove
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -62,7 +62,7 @@ export default async function RootLayout({
               },
             }}
           >
-            <Providers session={session}>
+            <Providers>
               {children}
             </Providers>
           </ConfigProvider>

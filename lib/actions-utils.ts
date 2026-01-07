@@ -18,7 +18,9 @@ export async function verifyTaskAccess(taskId: string): Promise<boolean> {
     const { role, groupIds } = session.user;
 
     // Admin has access to everything
-    if (role === 'admin') {
+    // Also check for MANAGE_SYSTEM permission
+    const permissions = (session.user as any)?.permissions || [];
+    if (role?.toLowerCase() === 'admin' || permissions.includes('MANAGE_SYSTEM')) {
         return true;
     }
 
@@ -54,4 +56,15 @@ export async function verifyTaskAccess(taskId: string): Promise<boolean> {
     }
 
     return true;
+}
+
+export async function checkPermission(permission: string): Promise<boolean> {
+    const session: any = await auth();
+    const userPermissions = session?.user?.permissions || [];
+    const role = session?.user?.role;
+    // Case-insensitive admin check
+    if (role?.toLowerCase() === 'admin' || userPermissions.includes('MANAGE_SYSTEM')) {
+        return true;
+    }
+    return userPermissions.includes(permission);
 }

@@ -17,24 +17,42 @@ export const authConfig = {
             return true;
         },
         async session({ session, token }) {
-            if (token.sub && session.user) {
-                session.user.id = token.sub;
-            }
-            if (token.role && session.user) {
-                // @ts-ignore
-                session.user.role = token.role;
-                // @ts-ignore
-                session.user.soHieu = token.soHieu;
-                // @ts-ignore
-                session.user.fullName = token.fullName;
-                // @ts-ignore
-                session.user.groupIds = token.groupIds;
-                // @ts-ignore
-                session.user.position = token.position;
+            if (session.user) {
+                if (token.sub) {
+                    session.user.id = token.sub;
+                }
+                if (token.role) {
+                    // @ts-ignore
+                    session.user.role = token.role;
+                }
+                if (token.soHieu) {
+                    // @ts-ignore
+                    session.user.soHieu = token.soHieu;
+                }
+                if (token.fullName) {
+                    // @ts-ignore
+                    session.user.fullName = token.fullName;
+                    session.user.name = token.fullName as string; // Ensure name is set
+                }
+                if (token.groupIds) {
+                    // @ts-ignore
+                    session.user.groupIds = token.groupIds;
+                }
+                if (token.position) {
+                    // @ts-ignore
+                    session.user.position = token.position;
+                }
+                if (token.image) {
+                    session.user.image = token.image as string;
+                }
+                if (token.permissions) {
+                    // @ts-ignore
+                    session.user.permissions = token.permissions;
+                }
             }
             return session;
         },
-        async jwt({ token, user }) {
+        async jwt({ token, user, trigger, session }) {
             if (user) {
                 token.role = user.role;
                 // @ts-ignore
@@ -45,7 +63,19 @@ export const authConfig = {
                 token.groupIds = user.groupIds;
                 // @ts-ignore
                 token.position = user.position;
+                // @ts-ignore
+                token.image = user.image;
+                // @ts-ignore
+                token.permissions = user.permissions;
             }
+
+            // Support updating session via client
+            if (trigger === "update" && session) {
+                // Allow updating specific fields if passed safely
+                if (session.user?.image) token.image = session.user.image;
+                // Add other updatable fields if needed
+            }
+
             return token;
         },
     },

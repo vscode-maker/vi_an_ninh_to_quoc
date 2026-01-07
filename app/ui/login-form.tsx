@@ -1,12 +1,17 @@
 'use client';
 
-import { useActionState, startTransition } from 'react';
+import { useActionState, startTransition, useEffect, useState } from 'react';
 import { authenticate } from '@/lib/actions';
 import { Button, Form, Input, Alert, Card } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 
 export default function LoginForm() {
     const [errorMessage, dispatch, isPending] = useActionState(authenticate, undefined);
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     const onFinish = (values: any) => {
         const formData = new FormData();
@@ -17,6 +22,8 @@ export default function LoginForm() {
             dispatch(formData);
         });
     };
+
+    if (!isMounted) return null; // Avoid hydration mismatch from extensions
 
     return (
         <div style={{

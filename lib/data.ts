@@ -13,7 +13,8 @@ export async function fetchTasks(query?: string): Promise<{ tasks: Task[], count
         const baseWhere: any = {};
 
         // Filter by Groups (if not admin)
-        if (role !== 'admin') {
+        const permissions = (session.user as any)?.permissions || [];
+        if (role?.toLowerCase() !== 'admin' && !permissions.includes('MANAGE_SYSTEM')) {
             if (!groupIds) return { tasks: [], counts: {} };
             const groupIdArray = groupIds.split(',').map((id: string) => id.trim());
             baseWhere.groupId = { in: groupIdArray };
@@ -49,8 +50,10 @@ export async function fetchTasks(query?: string): Promise<{ tasks: Task[], count
             return { tasks, counts };
 
         } else {
-            // Initial Load: Limit to 20 tasks per status AND get totals
+            // Initial Load: Limit to 20 tasks per status for regular users, ALL for Admin
             const statuses = ['Chưa thực hiện', 'Chờ kết quả', 'Hoàn thành'];
+            const isAdminOrManager = role?.toLowerCase() === 'admin' || (session.user as any)?.permissions?.includes('MANAGE_SYSTEM');
+            const takeLimit = isAdminOrManager ? undefined : 20;
 
             // Run queries in parallel
             // We need both the tasks (limit 20) AND the count (total) for each status
@@ -59,7 +62,7 @@ export async function fetchTasks(query?: string): Promise<{ tasks: Task[], count
                     prisma.task.findMany({
                         where: { ...baseWhere, status },
                         orderBy: { updatedAt: 'desc' },
-                        take: 20
+                        take: takeLimit
                     }),
                     prisma.task.count({
                         where: { ...baseWhere, status }
@@ -84,5 +87,3 @@ export async function fetchTasks(query?: string): Promise<{ tasks: Task[], count
         throw new Error('Failed to fetch tasks.');
     }
 }
-
-

@@ -15,6 +15,12 @@ declare module "next-auth" {
             fullName: string
             /** The user's group IDs. */
             groupIds: string | null
+            /** The user's permissions */
+            permissions: string[]
+            /** The user's position */
+            position: string | null
+            /** The user's image */
+            image: string | null
         } & DefaultSession["user"]
     }
 
@@ -23,6 +29,9 @@ declare module "next-auth" {
         soHieu: string
         fullName: string
         groupIds: string | null
+        permissions: string[]
+        position: string | null
+        // Image is usually already in DefaultUser, but strict checking might need it
     }
 }
 
@@ -33,5 +42,8 @@ declare module "next-auth/jwt" {
         soHieu: string
         fullName: string
         groupIds: string | null
+        permissions: string[]
+        position: string | null
+        image: string | null
     }
 }

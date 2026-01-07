@@ -1,0 +1,27 @@
+[2026-01-06T11:36:20.390Z] START fetchChatMessages for group: "01 - 02" (type: string)
+[2026-01-06T11:36:20.425Z] START fetchChatMessages for group: "01 - 02" (type: string)
+[2026-01-06T11:36:21.661Z] START fetchChatMessages for group: "01 - 02" (type: string)
+[2026-01-06T11:36:21.687Z] START fetchChatMessages for group: "01 - 02" (type: string)
+[2026-01-06T11:36:21.714Z] START fetchChatMessages for group: "01 - 02" (type: string)
+[2026-01-06T11:39:29.991Z] START fetchChatMessages for group: "01 - 02" (type: string)
+[2026-01-06T11:39:55.939Z] START fetchChatMessages for group: "01 - 02" (type: string)
+[2026-01-06T11:41:30.991Z] START fetchChatMessages for group: "01 - 02" (type: string)
+[2026-01-06T11:49:40.128Z] START fetchChatMessages for group: "01 - 02" (type: string)
+[2026-01-06T11:49:40.134Z] Executing Prisma Query 1 (Exact Match)...
+[2026-01-06T11:49:40.290Z] Query 1 Found: 5
+[2026-01-06T11:49:40.292Z] Returning real messages.
+[2026-01-06T11:49:40.293Z] ERROR: TypeError: msg.thoiGian.toISOString is not a function
+[2026-01-06T11:56:48.718Z] START fetchChatMessages for group: "01 - 02" (type: string)
+[2026-01-06T11:56:48.723Z] Executing Prisma Query 1 (Exact Match)...
+[2026-01-06T11:56:48.874Z] Query 1 Found: 5
+[2026-01-06T11:56:48.875Z] Returning real messages.
+[2026-01-06T11:56:48.876Z] ERROR: TypeError: msg.thoiGian.toISOString is not a function
+[2026-01-06T11:58:15.286Z] START fetchChatMessages for group: "01 - 02" (type: string)
+[2026-01-06T11:58:15.287Z] Executing Prisma Query 1 (Exact Match)...
+[2026-01-06T11:58:15.427Z] Query 1 Found: 5
+[2026-01-06T11:58:15.429Z] Returning real messages.
+[2026-01-06T11:58:15.431Z] ERROR: TypeError: msg.thoiGian.toISOString is not a function
+[2026-01-06T12:06:26.328Z] START fetchChatMessages for group: "01 - 02" (type: string)
+[2026-01-06T12:06:26.329Z] Executing Prisma Query 1 (Exact Match)...
+[2026-01-06T12:06:26.471Z] Query 1 Found: 5
+[2026-01-06T12:06:26.476Z] Returning real messages.

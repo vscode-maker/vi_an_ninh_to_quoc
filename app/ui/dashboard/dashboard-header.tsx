@@ -4,16 +4,16 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import { Layout, Input, Button, Modal, Form, Select, DatePicker, message, Row, Col, Typography, Tooltip, Avatar, Dropdown, MenuProps } from 'antd';
 import { useRouter } from 'next/navigation';
-import { MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined } from '@ant-design/icons';
+import { MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined, LoadingOutlined, UploadOutlined, KeyOutlined, CameraOutlined } from '@ant-design/icons';
 import { useSession } from 'next-auth/react';
 import { createTask } from '@/lib/task-actions';
+import { updateAvatarAction, updatePasswordAction } from '@/lib/user-actions';
+import { Upload, Spin } from 'antd';
 
 const { Header } = Layout;
 const { Title, Text } = Typography;
 const { Option } = Select;
-const { TextArea } = Input; // This might be an issue if Input is removed from imports. Wait. Inner form uses Input.
-// Input is used in CreateTaskForm, so I must NOT remove Input from imports entirely.
-// I will keep Input in imports but remove Search related icons.
+const { TextArea } = Input;
 
 interface DashboardHeaderProps {
     collapsed: boolean;
@@ -23,11 +23,86 @@ interface DashboardHeaderProps {
 export default function DashboardHeader({ collapsed, setCollapsed }: DashboardHeaderProps) {
     const { replace, refresh } = useRouter();
     const { data: session } = useSession();
+
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-    const handleSync = () => {
-        refresh();
-        message.success('Đã làm mới dữ liệu!');
+    // New State for Profile Updates
+    const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+    const [avatarFile, setAvatarFile] = useState<File | null>(null);
+    const [uploading, setUploading] = useState(false);
+    const [changingPassword, setChangingPassword] = useState(false);
+
+    // ... existing handleSync
+
+    // Avatar Menu Handlers
+    const handleAvatarMenuClick: MenuProps['onClick'] = (e) => {
+        if (e.key === 'change-avatar') setIsAvatarModalOpen(true);
+        if (e.key === 'change-password') setIsPasswordModalOpen(true);
+        if (e.key === 'logout') {
+            // Let the Logout button in Sidebar handle this, or duplicate logic?
+            // User didn't ask to execute logout here, just options.
+            // But usually a dropdown has logout. 
+            // Current Requirement: "Change Avatar" and "Change Password".
+            // Sidebar has logout. I won't move logout here unless asked.
+        }
+    };
+
+    const userMenuProps: MenuProps = {
+        items: [
+            {
+                key: 'change-avatar',
+                label: 'Đổi ảnh đại diện',
+                icon: <CameraOutlined />,
+            },
+            {
+                key: 'change-password',
+                label: 'Đổi mật khẩu',
+                icon: <KeyOutlined />,
+            },
+        ],
+        onClick: handleAvatarMenuClick,
+    };
+
+    // Avatar Upload Handler
+    const handleUpdateAvatar = async () => {
+        if (!avatarFile) {
+            message.error('Vui lòng chọn ảnh!');
+            return;
+        }
+        setUploading(true);
+        const formData = new FormData();
+        formData.append('file', avatarFile);
+
+        const result = await updateAvatarAction(formData);
+        if (result.success) {
+            message.success(result.message);
+            setIsAvatarModalOpen(false);
+            setAvatarFile(null);
+            // Force session update usually requires reload or tricky re-fetch
+            window.location.reload(); // Simplest way to refresh session image
+        } else {
+            message.error(result.message);
+        }
+        setUploading(false);
+    };
+
+    // Password Update Handler
+    const handleUpdatePassword = async (values: any) => {
+        setChangingPassword(true);
+        const formData = new FormData();
+        formData.append('currentPassword', values.currentPassword);
+        formData.append('newPassword', values.newPassword);
+        formData.append('confirmPassword', values.confirmPassword);
+
+        const result = await updatePasswordAction(null, formData);
+        if (result.success) {
+            message.success(result.message);
+            setIsPasswordModalOpen(false);
+        } else {
+            message.error(result.message);
+        }
+        setChangingPassword(false);
     };
 
     return (
@@ -55,12 +130,15 @@ export default function DashboardHeader({ collapsed, setCollapsed }: DashboardHe
                     onClick={() => setCollapsed(!collapsed)}
                     style={{ fontSize: '24px', width: 46, height: 46, color: '#fff' }} // White icon
                 />
+                <Text strong style={{ color: '#fff', fontSize: 20, whiteSpace: 'nowrap', textTransform: 'uppercase' }}>
+                    VÌ AN NINH TỔ QUỐC
+                </Text>
             </div>
 
             {/* Right Section: User Profile & Logout */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                    <div className="user-info-details" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                         <Text strong style={{ color: '#fff', fontSize: 14 }}>
                             {session?.user?.name || 'User'}
                         </Text>
@@ -68,17 +146,20 @@ export default function DashboardHeader({ collapsed, setCollapsed }: DashboardHe
                             {(session?.user as any)?.position || 'Chưa cập nhật'}
                         </Text>
                     </div>
-                    <Avatar
-                        size={36}
-                        src={session?.user?.image}
-                        icon={!session?.user?.image && <UserOutlined />}
-                        style={{
-                            background: '#fff',
-                            color: '#1b5e20', // Green icon
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                            cursor: 'pointer'
-                        }}
-                    />
+
+                    <Dropdown menu={userMenuProps} placement="bottomRight" arrow>
+                        <Avatar
+                            size={36}
+                            src={session?.user?.image}
+                            icon={!session?.user?.image && <UserOutlined />}
+                            style={{
+                                background: '#fff',
+                                color: '#1b5e20', // Green icon
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                                cursor: 'pointer'
+                            }}
+                        />
+                    </Dropdown>
                 </div>
             </div>
 
@@ -96,6 +177,95 @@ export default function DashboardHeader({ collapsed, setCollapsed }: DashboardHe
                     refresh();
                 }} />
             </Modal>
+
+            {/* Avatar Update Modal */}
+            <Modal
+                title="Thay đổi ảnh đại diện"
+                open={isAvatarModalOpen}
+                onCancel={() => {
+                    setIsAvatarModalOpen(false);
+                    setAvatarFile(null);
+                }}
+                onOk={handleUpdateAvatar}
+                confirmLoading={uploading}
+                okText="Lưu thay đổi"
+                cancelText="Hủy"
+            >
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
+                    <div style={{
+                        width: 100,
+                        height: 100,
+                        borderRadius: '50%',
+                        overflow: 'hidden',
+                        border: '2px solid #eee',
+                        position: 'relative'
+                    }}>
+                        {avatarFile ? (
+                            <img src={URL.createObjectURL(avatarFile)} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                            <img src={session?.user?.image || "/images/logo.png"} alt="Current" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        )}
+                    </div>
+                    <Upload
+                        beforeUpload={(file) => {
+                            setAvatarFile(file);
+                            return false; // Prevent auto upload
+                        }}
+                        showUploadList={false}
+                        maxCount={1}
+                    >
+                        <Button icon={<UploadOutlined />}>Chọn ảnh mới</Button>
+                    </Upload>
+                    <Text type="secondary" style={{ fontSize: 12 }}>Hỗ trợ: JPG, PNG, GIF</Text>
+                </div>
+            </Modal>
+
+            {/* Password Update Modal */}
+            <Modal
+                title="Đổi mật khẩu"
+                open={isPasswordModalOpen}
+                onCancel={() => setIsPasswordModalOpen(false)}
+                footer={null}
+            >
+                <Form layout="vertical" onFinish={handleUpdatePassword}>
+                    <Form.Item
+                        name="currentPassword"
+                        label="Mật khẩu hiện tại"
+                        rules={[{ required: true, message: 'Vui lòng nhập mật khẩu hiện tại' }]}
+                    >
+                        <Input.Password placeholder="Nhập mật khẩu cũ" />
+                    </Form.Item>
+                    <Form.Item
+                        name="newPassword"
+                        label="Mật khẩu mới"
+                        rules={[{ required: true, message: 'Vui lòng nhập mật khẩu mới' }, { min: 6, message: 'Tối thiểu 6 ký tự' }]}
+                    >
+                        <Input.Password placeholder="Nhập mật khẩu mới" />
+                    </Form.Item>
+                    <Form.Item
+                        name="confirmPassword"
+                        label="Xác nhận mật khẩu mới"
+                        dependencies={['newPassword']}
+                        rules={[
+                            { required: true, message: 'Vui lòng xác nhận mật khẩu' },
+                            ({ getFieldValue }) => ({
+                                validator(_, value) {
+                                    if (!value || getFieldValue('newPassword') === value) {
+                                        return Promise.resolve();
+                                    }
+                                    return Promise.reject(new Error('Mật khẩu không khớp!'));
+                                },
+                            }),
+                        ]}
+                    >
+                        <Input.Password placeholder="Nhập lại mật khẩu mới" />
+                    </Form.Item>
+                    <Button type="primary" htmlType="submit" block loading={changingPassword}>
+                        Cập nhật mật khẩu
+                    </Button>
+                </Form>
+            </Modal>
+
         </Header>
     );
 }

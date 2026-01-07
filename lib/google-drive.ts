@@ -54,13 +54,32 @@ export async function uploadToDrive(file: File, folderId?: string) {
         });
 
         if (response.data.id) {
-            await drive.permissions.create({
-                fileId: response.data.id,
-                requestBody: {
-                    role: 'reader',
-                    type: 'anyone',
-                },
-            });
+            // Retry logic for permissions, as Drive API can be eventually consistent
+            let retries = 3;
+            while (retries > 0) {
+                try {
+                    await drive.permissions.create({
+                        fileId: response.data.id,
+                        requestBody: {
+                            role: 'reader',
+                            type: 'anyone',
+                        },
+                    });
+                    break; // Success
+                } catch (permError: any) {
+                    console.warn(`Permission set failed for ${response.data.id}, retrying... (${retries} left). Error: ${permError.message}`);
+                    retries--;
+                    if (retries === 0) {
+                        console.error('Failed to set public permission after retries.');
+                        // Decide: Do we fail the whole upload? 
+                        // Or just return the file but warn? 
+                        // Proceeding, as the file exists.
+                    } else {
+                        // Wait 1.5s before retry
+                        await new Promise(resolve => setTimeout(resolve, 1500));
+                    }
+                }
+            }
         }
 
         return {

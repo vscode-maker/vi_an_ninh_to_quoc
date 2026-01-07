@@ -1,0 +1,4 @@
+id_tai_khoan,id_cong_dan,loai_tai_khoan,so_tai_khoan,ngan_hang,ngay_mo,trang_thai,ghi_chu
+TK001,CD001,Ngân hàng,123456789,Vietcombank,2010-01-01,Hoạt động,-
+TK002,CD002,Ngân hàng,987654321,BIDV,2015-06-15,Hoạt động,-
+TK003,CD003,Facebook,fb_d2000,-,2018-07-01,Hoạt động,Tài khoản MXH

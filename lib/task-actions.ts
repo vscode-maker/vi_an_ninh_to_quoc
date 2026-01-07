@@ -4,12 +4,15 @@ import prisma from '@/lib/prisma';
 import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
 import { Task } from '@prisma/client';
-import { verifyTaskAccess } from './actions-utils';
+import { verifyTaskAccess, checkPermission } from './actions-utils';
+import { uploadToDrive } from '@/lib/google-drive';
+
 
 export async function updateTaskStatus(taskId: string, newStatus: string) {
     try {
         const authorized = await verifyTaskAccess(taskId);
         if (!authorized) throw new Error('Unauthorized');
+        if (!(await checkPermission('EDIT_TASK'))) throw new Error('Unauthorized: Missing Edit Permission');
 
         await prisma.task.update({
             where: { id: taskId },
@@ -24,14 +27,11 @@ export async function updateTaskStatus(taskId: string, newStatus: string) {
     }
 }
 
-import { uploadToDrive } from '@/lib/google-drive';
-
-// ... existing imports
-
 export async function createTask(prevState: any, formData: FormData) {
     try {
         const session = await auth();
         if (!session?.user) return { success: false, message: 'Unauthorized' };
+        if (!(await checkPermission('CREATE_TASK'))) return { success: false, message: 'Bạn không có quyền thêm công việc' };
 
         const rawData = Object.fromEntries(formData.entries());
 
@@ -112,8 +112,9 @@ export async function updateTask(taskId: string, formData: FormData) {
         try {
             await verifyTaskAccess(taskId);
         } catch (e) {
-            return { success: false, message: 'Bạn không có quyền chỉnh sửa công việc này' };
+            return { success: false, message: 'Bạn không có quyền chỉnh sửa công việc này (không thuộc nhóm)' };
         }
+        if (!(await checkPermission('EDIT_TASK'))) return { success: false, message: 'Bạn không được cấp quyền sửa công việc' };
 
         const rawData = Object.fromEntries(formData.entries());
 
@@ -186,8 +187,9 @@ export async function uploadTaskFiles(taskId: string, formData: FormData) {
         try {
             await verifyTaskAccess(taskId);
         } catch (e) {
-            return { success: false, message: 'Bạn không có quyền tải file lên công việc này' };
+            return { success: false, message: 'Bạn không có quyền tải file (không thuộc nhóm)' };
         }
+        if (!(await checkPermission('EDIT_TASK'))) return { success: false, message: 'Bạn không được cấp quyền sửa công việc' };
 
         // Handle File Uploads
         const files = formData.getAll('files') as File[];
@@ -242,10 +244,13 @@ export async function uploadTaskFiles(taskId: string, formData: FormData) {
 
         let errorMsg = '';
         for (const file of files) {
+            console.log(`Processing file: ${file.name}, Size: ${file.size}`);
             if (file.size > 0 && file.name !== 'undefined') {
                 const uploadResult = await uploadToDrive(file);
+                console.log('Upload Result:', JSON.stringify(uploadResult));
+
                 if (uploadResult && !('error' in uploadResult)) {
-                    await prisma.fileAttach.create({
+                    const newFile = await prisma.fileAttach.create({
                         data: {
                             fileId: uploadResult.fileId,
                             taskId: taskId,
@@ -257,11 +262,14 @@ export async function uploadTaskFiles(taskId: string, formData: FormData) {
                             moreInfo: moreInfoJson || undefined,
                         }
                     });
+                    console.log('DB Insert Success:', newFile);
                     uploadCount++;
                 } else if (uploadResult && 'error' in uploadResult) {
                     errorMsg = (uploadResult as any).error;
                     console.error('Upload failed for file', file.name, errorMsg);
                 }
+            } else {
+                console.warn('File skipped due to size 0 or undefined name');
             }
         }
 
@@ -303,7 +311,7 @@ export async function getZaloGroups() {
         const { role, groupIds } = session.user;
         const where: any = {};
 
-        if (role !== 'admin') {
+        if (role?.toLowerCase() !== 'admin') {
             if (!groupIds) return [];
             const groupIdArray = groupIds.split(',').map((id: string) => id.trim());
             where.groupId = { in: groupIdArray };
@@ -348,8 +356,9 @@ export async function addTaskNote(taskId: string, content: string) {
         try {
             await verifyTaskAccess(taskId);
         } catch (e) {
-            return { success: false, message: 'Bạn không có quyền thêm ghi chú' };
+            return { success: false, message: 'Bạn không có quyền thêm ghi chú (không thuộc nhóm)' };
         }
+        if (!(await checkPermission('EDIT_TASK'))) return { success: false, message: 'Bạn không được cấp quyền sửa công việc' };
 
         const task = await prisma.task.findUnique({
             where: { id: taskId },
@@ -392,6 +401,7 @@ export async function updateTaskNote(taskId: string, noteId: string, newContent:
         } catch (e) {
             return { success: false, message: 'Bạn không có quyền sửa ghi chú' };
         }
+        if (!(await checkPermission('EDIT_TASK'))) return { success: false, message: 'Bạn không được cấp quyền sửa công việc' };
 
         const task = await prisma.task.findUnique({
             where: { id: taskId },
@@ -434,6 +444,7 @@ export async function deleteTaskNote(taskId: string, noteId: string) {
         } catch (e) {
             return { success: false, message: 'Bạn không có quyền xóa ghi chú' };
         }
+        if (!(await checkPermission('EDIT_TASK'))) return { success: false, message: 'Bạn không được cấp quyền sửa công việc (xóa note)' };
 
         const task = await prisma.task.findUnique({
             where: { id: taskId },
@@ -484,6 +495,7 @@ export async function deleteTask(taskId: string) {
         } catch (e) {
             return { success: false, message: 'Bạn không có quyền xóa công việc này' };
         }
+        if (!(await checkPermission('DELETE_TASK'))) return { success: false, message: 'Bạn không được cấp quyền xóa công việc' };
 
         // Manually delete related FileAttach records first
         await prisma.fileAttach.deleteMany({
@@ -510,7 +522,8 @@ export async function fetchMoreTasks(status: string, skip: number): Promise<Task
         const { role, groupIds } = session.user;
         const baseWhere: any = { status };
 
-        if (role !== 'admin') {
+        const permissions = (session.user as any)?.permissions || [];
+        if (role?.toLowerCase() !== 'admin' && !permissions.includes('MANAGE_SYSTEM')) {
             if (!groupIds) return [];
             const groupIdArray = groupIds.split(',').map((id: string) => id.trim());
             baseWhere.groupId = { in: groupIdArray };

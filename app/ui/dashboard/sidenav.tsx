@@ -4,11 +4,23 @@ import React from 'react';
 import Image from 'next/image';
 import { Layout, Menu, Divider, Typography } from 'antd';
 import {
+    HomeOutlined,
     ProjectOutlined,
+    SettingOutlined,
     LogoutOutlined,
+    MenuFoldOutlined,
+    MenuUnfoldOutlined,
+    TeamOutlined,
+    SafetyCertificateOutlined,
+    UserOutlined,
+    MessageOutlined,
+    FileTextOutlined,
+    SolutionOutlined,
+    BookOutlined,
+    AppstoreOutlined
 } from '@ant-design/icons';
 import { usePathname, useRouter } from 'next/navigation';
-import { signOut } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 
 const { Sider } = Layout;
 const { Text } = Typography;
@@ -24,13 +36,138 @@ export default function SideNav({ collapsed, setCollapsed, isMobile = false }: S
     const router = useRouter();
 
     // Menu items configuration
+
     const menuItems = [
         {
-            key: '/dashboard',
+            key: '/dashboard/cong-dan',
+            icon: <TeamOutlined />,
+            label: 'Công dân',
+        },
+        {
+            key: '/dashboard/cong-viec',
             icon: <ProjectOutlined />,
             label: 'Công việc',
         },
+        {
+            key: '/dashboard/data-don-an',
+            icon: <SolutionOutlined />,
+            label: 'Quản lý Đơn án',
+        },
+        {
+            key: 'danh-muc', // SubMenu key
+            icon: <AppstoreOutlined />,
+            label: 'Danh mục dữ liệu',
+            children: [
+                { key: '/dashboard/danh-muc/nguoi-tham-gia', label: 'Người tham gia tố tụng' },
+                { key: '/dashboard/danh-muc/phuong-tien', label: 'Phương tiện' },
+                { key: '/dashboard/danh-muc/vat-chung', label: 'Vật chứng' },
+                { key: '/dashboard/danh-muc/truy-na', label: 'Truy nã' },
+                { key: '/dashboard/danh-muc/tien-an', label: 'Tiền án tiền sự' },
+                { key: '/dashboard/danh-muc/bien-phap', label: 'Biện pháp ngăn chặn' },
+                { key: '/dashboard/danh-muc/cong-van', label: 'Thông tin công văn' },
+                { key: '/dashboard/danh-muc/phan-cong', label: 'Thông tin phân công' },
+                { key: '/dashboard/danh-muc/qua-trinh', label: 'Quá trình điều tra' },
+                { key: '/dashboard/danh-muc/thanh-vien', label: 'Thành viên trong hộ' },
+                { key: '/dashboard/danh-muc/hanh-vi', label: 'Hành vi tội danh' },
+                { key: '/dashboard/danh-muc/tai-khoan', label: 'Thông tin tài khoản' },
+                { key: '/dashboard/danh-muc/thiet-hai', label: 'Thông tin thiệt hại' },
+                { key: '/dashboard/danh-muc/thong-tin-chat', label: 'Thông tin chat' },
+            ]
+        },
+        {
+            key: '/dashboard/bo-luat',
+            icon: <BookOutlined />,
+            label: 'Tra cứu Bộ Luật',
+        },
+        {
+            key: '/dashboard/nhan-vien',
+            icon: <UserOutlined />,
+            label: 'Nhân viên',
+        },
+        {
+            key: '/dashboard/zalo',
+            icon: <MessageOutlined />, // or WechatOutlined if available in generic
+            label: 'Nhóm Zalo',
+        },
+        {
+            key: '/dashboard/tai-lieu',
+            icon: <FileTextOutlined />,
+            label: 'Tài liệu',
+        },
+        {
+            key: '/dashboard/phan-quyen',
+            icon: <SafetyCertificateOutlined />,
+            label: 'Phân quyền',
+        },
+        {
+            key: '/dashboard/cai-dat',
+            icon: <SettingOutlined />,
+            label: 'Cài đặt',
+        },
     ];
+
+    const { data: session } = useSession();
+
+    // Permission Mapping
+    const PERMISSION_MAPPING: { [key: string]: string } = {
+        '/dashboard/cong-dan': 'VIEW_CITIZEN',
+        '/dashboard/cong-viec': 'VIEW_TASK',
+        '/dashboard/nhan-vien': 'VIEW_EMPLOYEE',
+        '/dashboard/zalo': 'VIEW_ZALO',
+        '/dashboard/tai-lieu': 'VIEW_FILE',
+        '/dashboard/phan-quyen': 'VIEW_USER',
+        '/dashboard/cai-dat': 'VIEW_SETTING',
+        // New Modules
+        '/dashboard/data-don-an': 'VIEW_DATA_DON_AN',
+        '/dashboard/bo-luat': 'VIEW_BO_LUAT',
+        // Generic Modules - Map specific routes
+        '/dashboard/danh-muc/nguoi-tham-gia': 'VIEW_NGUOI_THAM_GIA',
+        '/dashboard/danh-muc/phuong-tien': 'VIEW_PHUONG_TIEN',
+        '/dashboard/danh-muc/vat-chung': 'VIEW_VAT_CHUNG',
+        '/dashboard/danh-muc/truy-na': 'VIEW_TRUY_NA',
+        '/dashboard/danh-muc/tien-an': 'VIEW_TIEN_AN',
+        '/dashboard/danh-muc/bien-phap': 'VIEW_BIEN_PHAP',
+        '/dashboard/danh-muc/thong-tin-chat': 'VIEW_THONG_TIN_CHAT',
+        // Add default mapping for parent 'danh-muc' if needed, or leave blank? 
+        // Parent menu visibility depends on children usually or explicit check manually?
+        // Sidenav logic: generic 'danh-muc' key -> 'VIEW_DANH_MUC' (Deleted).
+        // Strategy: Parent shows if any child shows (Ant Design behavior usually requires logic, but here we filter item list).
+        // Let's remove 'danh-muc' mapping and let logic handle it, OR map to a common permission if we had one.
+        // Actually, the filter logic iterates children? No, it filters top level.
+        // If top level has children, we need to filter children first.
+
+        // Wait, current logic:
+        // const requiredPerm = PERMISSION_MAPPING[item.key];
+        // If item has children, we should check recursive access.
+
+        // I need to update the filter logic in Step 3550. For now, add mappings.
+    };
+
+    const checkAccess = (key: string) => {
+        const user = session?.user as any;
+        if (user?.role === 'admin' || user?.permissions?.includes('MANAGE_SYSTEM')) return true;
+        const requiredPerm = PERMISSION_MAPPING[key];
+        if (!requiredPerm) return true; // Public or no specific lock
+        return user?.permissions?.includes(requiredPerm);
+    };
+
+    const filterItems = (items: any[]): any[] => {
+        return items.reduce((acc, item) => {
+            if (item.children) {
+                const filteredChildren = filterItems(item.children);
+                if (filteredChildren.length > 0) {
+                    acc.push({ ...item, children: filteredChildren });
+                }
+            } else {
+                if (checkAccess(item.key)) {
+                    acc.push(item);
+                }
+            }
+            return acc;
+        }, []);
+    };
+
+    const filteredMenuItems = filterItems(menuItems);
 
     const handleMenuClick = (key: string) => {
         router.push(key);
@@ -113,7 +250,7 @@ export default function SideNav({ collapsed, setCollapsed, isMobile = false }: S
                             opacity: collapsed ? 0 : 1,
                             transition: 'opacity 0.2s'
                         }}>
-                            VANTQ
+                            PC01 SYSTEM
                         </Text>
                     )}
                 </div>
@@ -133,17 +270,18 @@ export default function SideNav({ collapsed, setCollapsed, isMobile = false }: S
                         padding: '12px 8px',
                         flex: 1,
                     }}
-                    items={menuItems.map((item) => ({
-                        key: item.key,
-                        icon: (
-                            <span style={{ fontSize: 20 }}>
-                                {item.icon}
-                            </span>
-                        ),
-                        label: collapsed ? null : <span style={{ color: '#000000', fontWeight: 500 }}>{item.label}</span>,
-                        title: '', // Disable tooltip
-                        onClick: () => handleMenuClick(item.key),
-                    }))}
+                    items={filteredMenuItems.map((item) => {
+                        // Helper to format item for Ant Menu
+                        const formatItem = (i: any): any => ({
+                            key: i.key,
+                            icon: i.icon ? <span style={{ fontSize: 20 }}>{i.icon}</span> : null,
+                            label: collapsed ? null : <span style={{ color: '#000000', fontWeight: 500 }}>{i.label}</span>,
+                            title: '',
+                            onClick: i.children ? undefined : () => handleMenuClick(i.key),
+                            children: i.children ? i.children.map(formatItem) : undefined
+                        });
+                        return formatItem(item);
+                    })}
                 />
 
                 {/* Logout Button */}

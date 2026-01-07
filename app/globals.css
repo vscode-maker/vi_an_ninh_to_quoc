@@ -112,3 +112,10 @@ body {
 .custom-sidebar-white .ant-menu-inline-collapsed .ant-menu-item .ant-menu-title-content {
     display: none !important;
 }
+
+/* Hide User Info on Mobile */
+@media (max-width: 768px) {
+    .user-info-details {
+        display: none !important;
+    }
+}

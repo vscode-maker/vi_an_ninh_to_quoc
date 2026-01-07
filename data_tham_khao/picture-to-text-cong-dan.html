@@ -1,0 +1,1090 @@
+<!doctype html>
+
+<html
+  lang="en"
+  class="layout-navbar-fixed layout-menu-fixed layout-compact"
+  dir="ltr"
+  data-skin="default"
+  data-assets-path="assets/"
+  data-template="vertical-menu-template"
+  data-bs-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
+    <meta name="robots" content="noindex" />
+
+    <title>CAND</title>
+
+    <meta name="description" content="" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="assets/img/favicon/favicon.ico" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Update current year without document.write -->
+    <script>
+      // Performance optimization: Make certain events passive
+      (function () {
+        const passiveEvents = ['touchstart', 'touchmove', 'wheel', 'mousewheel'];
+        const originalAddEventListener = EventTarget.prototype.addEventListener;
+
+        EventTarget.prototype.addEventListener = function (type, listener, options) {
+          if (passiveEvents.includes(type) && typeof options !== 'object') {
+            options = { passive: true };
+          } else if (passiveEvents.includes(type) && typeof options === 'object' && options.passive === undefined) {
+            options.passive = true;
+          }
+          return originalAddEventListener.call(this, type, listener, options);
+        };
+      })();
+
+      document.addEventListener('DOMContentLoaded', function () {
+        const currentYearSpan = document.getElementById('current-year');
+        if (currentYearSpan) {
+          currentYearSpan.textContent = new Date().getFullYear();
+        }
+      });
+    </script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&ampdisplay=swap"
+      rel="stylesheet" />
+
+    <link rel="stylesheet" href="assets/vendor/fonts/iconify-icons.css" />
+
+    <!-- Core CSS -->
+    <link rel="stylesheet" href="assets/vendor/css/theme.css">
+
+    <link rel="stylesheet" href="assets/vendor/libs/dropzone/dropzone.css" />
+    <!-- Highlight.js CSS from CDN for better compatibility -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" />
+
+    <!-- Page CSS -->
+    <style>
+      /* Performance optimizations to reduce violations */
+      * {
+        touch-action: manipulation;
+      }
+
+      /* Specific optimizations for scroll-blocking events */
+      body,
+      html {
+        touch-action: pan-x pan-y;
+        overscroll-behavior: contain;
+      }
+
+      .layout-wrapper,
+      .layout-container,
+      .layout-page,
+      .content-wrapper {
+        touch-action: pan-y;
+      }
+
+      .dz-clickable,
+      .dropzone {
+        touch-action: manipulation;
+      }
+
+      /* Perfect scrollbar optimizations */
+      .ps__rail-x,
+      .ps__rail-y {
+        touch-action: none;
+      }
+
+      /* Smooth scrolling */
+      html {
+        scroll-behavior: smooth;
+      }
+
+      /* Reduce layout thrashing */
+      .card,
+      .form-control,
+      .btn {
+        will-change: auto;
+      }
+
+      /* Prevent wheel events from being passive where needed */
+      .ps,
+      .ps__container {
+        touch-action: none;
+      }
+
+      /* Dropzone styling */
+      .dropzone {
+        border: 2px dashed rgba(var(--bs-primary-rgb), 0.3);
+        border-radius: 0.5rem;
+        transition: all 0.3s ease;
+        background: rgba(var(--bs-primary-rgb), 0.02);
+      }
+
+      .dropzone:hover,
+      .dropzone.dz-drag-hover {
+        border-color: rgba(var(--bs-primary-rgb), 0.5);
+        background: rgba(var(--bs-primary-rgb), 0.05);
+      }
+
+      .dropzone .dz-message {
+        color: #666;
+        font-size: 1rem;
+      }
+
+      .dropzone .dz-preview .dz-image {
+        border-radius: 0.375rem;
+        overflow: hidden;
+      }
+
+      /* JSON result styling */
+      #json-output {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 0.375rem;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        overflow-x: auto;
+        white-space: pre;
+      }
+
+      .json-valid {
+        border-color: #28a745;
+      }
+      .json-invalid {
+        border-color: #dc3545;
+      }
+
+      /* Performance info styling */
+      .performance-info {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border: 1px solid #e9ecef;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+      }
+
+      .performance-info .badge {
+        font-weight: 500;
+      }
+
+      /* Image Preview Modal Styles */
+      .modal-dialog-slideInRight {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        margin: 0;
+        width: 90vw;
+        max-width: 800px;
+        height: 100vh;
+        transform: translateX(100%);
+        transition: transform 0.3s ease-in-out;
+      }
+
+      .modal.show .modal-dialog-slideInRight {
+        transform: translateX(0);
+      }
+
+      .modal-backdrop {
+        background-color: rgba(0, 0, 0, 0.7);
+      }
+
+      /* Image container */
+      .image-preview-container {
+        position: relative;
+        height: 70vh;
+        overflow: hidden;
+        background: #f8f9fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      #modalImage {
+        max-width: 100%;
+        max-height: 100%;
+        width: auto;
+        height: auto;
+        user-select: none;
+      }
+
+      /* Image info */
+      .image-info {
+        position: absolute;
+        bottom: 15px;
+        left: 15px;
+        z-index: 10;
+      }
+
+      .image-info .badge {
+        font-size: 11px;
+        padding: 6px 10px;
+        backdrop-filter: blur(10px);
+      }
+
+      /* Image loading */
+      .image-loading {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 5;
+      }
+
+      /* Dropzone image click enhancement */
+      .dropzone .dz-preview .dz-image {
+        cursor: pointer;
+        transition: transform 0.2s ease;
+      }
+
+      .dropzone .dz-preview .dz-image:hover {
+        transform: scale(1.05);
+      }
+
+      /* Dropzone progress bar styling */
+      .dropzone .dz-preview .progress {
+        height: 4px;
+        background-color: rgba(var(--bs-secondary-rgb), 0.2);
+        border-radius: 2px;
+        overflow: hidden;
+        margin-top: 8px;
+      }
+
+      .dropzone .dz-preview .progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, var(--bs-primary) 0%, var(--bs-info) 100%);
+        border-radius: 2px;
+        transition: width 0.3s ease;
+        width: 0%;
+      }
+
+      /* Dropzone thumbnail container */
+      .dropzone .dz-preview .dz-thumbnail {
+        position: relative;
+        width: 120px;
+        height: 120px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        border-radius: 8px;
+      }
+
+      .dropzone .dz-preview .dz-success-mark,
+      .dropzone .dz-preview .dz-error-mark {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 10;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 50%;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      .dropzone .dz-preview .dz-success-mark::after {
+        content: '✓';
+        color: var(--bs-success);
+        font-size: 20px;
+        font-weight: bold;
+      }
+
+      .dropzone .dz-preview .dz-error-mark::after {
+        content: '✕';
+        color: var(--bs-danger);
+        font-size: 18px;
+        font-weight: bold;
+      }
+
+      .dropzone .dz-preview.dz-success .dz-success-mark {
+        opacity: 1;
+      }
+
+      .dropzone .dz-preview.dz-error .dz-error-mark {
+        opacity: 1;
+      }
+
+      /* Custom scrollbar for modal */
+      .modal-content::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .modal-content::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+      }
+
+      .modal-content::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 4px;
+      }
+
+      .modal-content::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+      }
+
+      /* Icon base styling */
+      .icon-base {
+        display: inline-block;
+        font-family: 'remixicon';
+        font-style: normal;
+        font-weight: normal;
+        font-variant: normal;
+        text-transform: none;
+        line-height: 1;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      .modal-header .icon-base,
+      .modal-footer .icon-base {
+        font-size: 16px;
+      }
+    </style>
+
+    <!-- Helpers -->
+    <script src="assets/vendor/js/helpers.js"></script>
+    <!--! Template customizer & Theme config files MUST be included after core stylesheets and helpers.js in the <head> section -->
+
+    <!--? Template customizer: To hide customizer set displayCustomizer value false in config.js. -->
+    <script src="assets/vendor/js/template-customizer.js"></script>
+
+    <!--? Config: Mandatory theme config file contain global vars & default theme options, Set your preferred theme option in this file. -->
+
+    <script src="assets/js/config.js"></script>
+  </head>
+
+  <body>
+    <!-- Layout wrapper -->
+    <div class="layout-wrapper layout-content-navbar">
+      <div class="layout-container">
+        <!-- Menu -->
+        <aside id="layout-menu" class="layout-menu menu-vertical menu">
+          <div class="app-brand demo">
+            <a href="index.html" class="app-brand-link gap-xl-0 gap-2">
+              <span class="app-brand-logo demo me-1">
+                <img
+                  src="assets/img/branding/logo-cong-an-nhan-dan.png"
+                  alt="Logo Công an Nhân dân"
+                  width="50"
+                  height="24"
+                  class="img-fluid" />
+              </span>
+              <span class="app-brand-text demo menu-text fw-semibold ms-2">CAND</span>
+            </a>
+
+            <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto">
+              <i class="menu-toggle-icon d-xl-inline-block align-middle"></i>
+            </a>
+          </div>
+
+          <div class="menu-inner-shadow"></div>
+
+          <ul class="menu-inner py-1">
+            <!-- OCR-->
+            <li class="menu-header mt-7">
+              <span class="menu-header-text" data-i18n="Tiện ích OCR">Tiện ích &amp; OCR</span>
+            </li>
+            <li class="menu-item">
+              <a href="picture-to-text-cong-dan.html" class="menu-link">
+                <i class="menu-icon icon-base ri ri-user-line"></i>
+                <div data-i18n="OCR công dân">OCR công dân</div>
+              </a>
+            </li>
+            <li class="menu-item">
+              <a href="picture-to-text-vbtt-quyet-dinh.html" class="menu-link">
+                <i class="menu-icon icon-base ri ri-file-text-line"></i>
+                <div data-i18n="OCR VBTT quyết định">OCR VBTT quyết định</div>
+              </a>
+            </li>
+            <li class="menu-item">
+              <a href="picture-to-text-vbtt-truy-na.html" class="menu-link">
+                <i class="menu-icon icon-base ri ri-alarm-warning-line"></i>
+                <div data-i18n="OCR VBTT truy nã">OCR VBTT truy nã</div>
+              </a>
+            </li>
+          </ul>
+        </aside>
+        <div class="menu-mobile-toggler d-xl-none rounded-1">
+          <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large text-bg-secondary p-2 rounded-1">
+            <i class="ri ri-menu-line icon-base"></i>
+            <i class="ri ri-arrow-right-s-line icon-base"></i>
+          </a>
+        </div>
+        <!-- / Menu -->
+
+        <!-- Layout container -->
+        <div class="layout-page">
+          <!-- Navbar -->
+
+          <nav
+            class="layout-navbar container-xxl navbar-detached navbar navbar-expand-xl align-items-center bg-navbar-theme"
+            id="layout-navbar">
+            <div class="layout-menu-toggle navbar-nav align-items-xl-center me-4 me-xl-0 d-xl-none">
+              <a class="nav-item nav-link px-0 me-xl-6" href="javascript:void(0)">
+                <i class="icon-base ri ri-menu-line icon-md"></i>
+              </a>
+            </div>
+
+            <div class="d-none navbar-nav-right d-flex align-items-center justify-content-end" id="navbar-collapse">
+              <!-- Search -->
+              <div class="navbar-nav align-items-center">
+                <div class="nav-item navbar-search-wrapper mb-0">
+                  <a class="nav-item nav-link search-toggler px-0" href="javascript:void(0);">
+                    <span class="d-inline-block text-body-secondary fw-normal" id="autocomplete"></span>
+                  </a>
+                </div>
+              </div>
+
+              <!-- /Search -->
+
+              <ul class="navbar-nav flex-row align-items-center ms-md-auto">
+                <!-- Style Switcher -->
+                <li class="nav-item dropdown me-sm-2 me-xl-0">
+                  <a
+                    class="nav-link dropdown-toggle hide-arrow btn btn-icon btn-text-secondary rounded-pill"
+                    id="nav-theme"
+                    href="javascript:void(0);"
+                    data-bs-toggle="dropdown">
+                    <i class="icon-base ri ri-sun-line icon-22px theme-icon-active"></i>
+                    <span class="d-none ms-2" id="nav-theme-text">Toggle theme</span>
+                  </a>
+                  <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-theme-text">
+                    <li>
+                      <button
+                        type="button"
+                        class="dropdown-item align-items-center active"
+                        data-bs-theme-value="light"
+                        aria-pressed="false">
+                        <span> <i class="icon-base ri ri-sun-line icon-md me-3" data-icon="sun-line"></i>Light</span>
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        type="button"
+                        class="dropdown-item align-items-center"
+                        data-bs-theme-value="dark"
+                        aria-pressed="true">
+                        <span>
+                          <i class="icon-base ri ri-moon-clear-line icon-md me-3" data-icon="moon-clear-line"></i
+                          >Dark</span
+                        >
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        type="button"
+                        class="dropdown-item align-items-center"
+                        data-bs-theme-value="system"
+                        aria-pressed="false">
+                        <span>
+                          <i class="icon-base ri ri-computer-line icon-md me-3" data-icon="computer-line"></i
+                          >System</span
+                        >
+                      </button>
+                    </li>
+                  </ul>
+                </li>
+                <!-- / Style Switcher-->
+
+                <!-- Notification -->
+                <li class="nav-item dropdown-notifications navbar-dropdown dropdown me-3 me-xl-1">
+                  <a
+                    class="nav-link dropdown-toggle hide-arrow btn btn-icon btn-text-secondary rounded-pill"
+                    href="javascript:void(0);"
+                    data-bs-toggle="dropdown"
+                    data-bs-auto-close="outside"
+                    aria-expanded="false">
+                    <span class="position-relative">
+                      <i class="icon-base ri ri-notification-2-line icon-22px"></i>
+                      <span class="badge rounded-pill bg-danger badge-dot badge-notifications border"></span>
+                    </span>
+                  </a>
+                  <ul class="dropdown-menu dropdown-menu-end p-0">
+                    <li class="dropdown-menu-header border-bottom">
+                      <div class="dropdown-header d-flex align-items-center py-3">
+                        <h6 class="mb-0 me-auto">Notification</h6>
+                        <div class="d-flex align-items-center h6 mb-0">
+                          <span class="badge bg-label-primary rounded-pill me-2">8 New</span>
+                          <a
+                            href="javascript:void(0)"
+                            class="dropdown-notifications-all p-2"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="top"
+                            title="Mark all as read">
+                            <i class="icon-base ri ri-mail-open-line text-heading"></i>
+                          </a>
+                        </div>
+                      </div>
+                    </li>
+                    <li class="dropdown-notifications-list scrollable-container">
+                      <ul class="list-group list-group-flush">
+                        <li class="list-group-item list-group-item-action dropdown-notifications-item">
+                          <div class="d-flex">
+                            <div class="flex-shrink-0 me-3">
+                              <div class="avatar">
+                                <img src="assets/img/avatars/1.png" alt="alt" class="rounded-circle" />
+                              </div>
+                            </div>
+                            <div class="flex-grow-1">
+                              <h6 class="small mb-50">Congratulation Lettie 🎉</h6>
+                              <small class="mb-1 d-block text-body">Won the monthly best seller gold badge</small>
+                              <small class="text-body-secondary">1h ago</small>
+                            </div>
+                            <div class="flex-shrink-0 dropdown-notifications-actions">
+                              <a href="javascript:void(0)" class="dropdown-notifications-read">
+                                <span class="badge badge-dot"></span
+                              ></a>
+                              <a href="javascript:void(0)" class="dropdown-notifications-archive">
+                                <span class="icon-base ri ri-close-line"></span
+                              ></a>
+                            </div>
+                          </div>
+                        </li>
+                        <li class="list-group-item list-group-item-action dropdown-notifications-item">
+                          <div class="d-flex">
+                            <div class="flex-shrink-0 me-3">
+                              <div class="avatar">
+                                <span class="avatar-initial rounded-circle bg-label-danger">CF</span>
+                              </div>
+                            </div>
+                            <div class="flex-grow-1">
+                              <h6 class="small mb-50">Charles Franklin</h6>
+                              <small class="mb-1 d-block text-body">Accepted your connection</small>
+                              <small class="text-body-secondary">12hr ago</small>
+                            </div>
+                            <div class="flex-shrink-0 dropdown-notifications-actions">
+                              <a href="javascript:void(0)" class="dropdown-notifications-read">
+                                <span class="badge badge-dot"></span
+                              ></a>
+                              <a href="javascript:void(0)" class="dropdown-notifications-archive">
+                                <span class="icon-base ri ri-close-line"></span
+                              ></a>
+                            </div>
+                          </div>
+                        </li>
+                        <li class="list-group-item list-group-item-action dropdown-notifications-item marked-as-read">
+                          <div class="d-flex">
+                            <div class="flex-shrink-0 me-3">
+                              <div class="avatar">
+                                <img src="assets/img/avatars/2.png" alt="alt" class="rounded-circle" />
+                              </div>
+                            </div>
+                            <div class="flex-grow-1">
+                              <h6 class="small mb-50">New Message ✉️</h6>
+                              <small class="mb-1 d-block text-body">You have new message from Natalie</small>
+                              <small class="text-body-secondary">1h ago</small>
+                            </div>
+                            <div class="flex-shrink-0 dropdown-notifications-actions">
+                              <a href="javascript:void(0)" class="dropdown-notifications-read">
+                                <span class="badge badge-dot"></span
+                              ></a>
+                              <a href="javascript:void(0)" class="dropdown-notifications-archive">
+                                <span class="icon-base ri ri-close-line"></span
+                              ></a>
+                            </div>
+                          </div>
+                        </li>
+                        <li class="list-group-item list-group-item-action dropdown-notifications-item">
+                          <div class="d-flex">
+                            <div class="flex-shrink-0 me-3">
+                              <div class="avatar">
+                                <span class="avatar-initial rounded-circle bg-label-success">
+                                  <i class="icon-base ri ri-car-line"></i>
+                                </span>
+                              </div>
+                            </div>
+                            <div class="flex-grow-1">
+                              <h6 class="small mb-50">Whoo! You have new order 🛒</h6>
+                              <small class="mb-1 d-block text-body">ACME Inc. made new order $1,154</small>
+                              <small class="text-body-secondary">1 day ago</small>
+                            </div>
+                            <div class="flex-shrink-0 dropdown-notifications-actions">
+                              <a href="javascript:void(0)" class="dropdown-notifications-read">
+                                <span class="badge badge-dot"></span
+                              ></a>
+                              <a href="javascript:void(0)" class="dropdown-notifications-archive">
+                                <span class="icon-base ri ri-close-line"></span
+                              ></a>
+                            </div>
+                          </div>
+                        </li>
+                        <li class="list-group-item list-group-item-action dropdown-notifications-item marked-as-read">
+                          <div class="d-flex">
+                            <div class="flex-shrink-0 me-3">
+                              <div class="avatar">
+                                <img src="assets/img/avatars/9.png" alt="alt" class="rounded-circle" />
+                              </div>
+                            </div>
+                            <div class="flex-grow-1">
+                              <h6 class="small mb-50">Application has been approved 🚀</h6>
+                              <small class="mb-1 d-block text-body"
+                                >Your ABC project application has been approved.</small
+                              >
+                              <small class="text-body-secondary">2 days ago</small>
+                            </div>
+                            <div class="flex-shrink-0 dropdown-notifications-actions">
+                              <a href="javascript:void(0)" class="dropdown-notifications-read">
+                                <span class="badge badge-dot"></span
+                              ></a>
+                              <a href="javascript:void(0)" class="dropdown-notifications-archive">
+                                <span class="icon-base ri ri-close-line"></span
+                              ></a>
+                            </div>
+                          </div>
+                        </li>
+                        <li class="list-group-item list-group-item-action dropdown-notifications-item marked-as-read">
+                          <div class="d-flex">
+                            <div class="flex-shrink-0 me-3">
+                              <div class="avatar">
+                                <span class="avatar-initial rounded-circle bg-label-success">
+                                  <i class="icon-base ri ri-pie-chart-2-line"></i>
+                                </span>
+                              </div>
+                            </div>
+                            <div class="flex-grow-1">
+                              <h6 class="small mb-50">Monthly report is generated</h6>
+                              <small class="mb-1 d-block text-body">July monthly financial report is generated </small>
+                              <small class="text-body-secondary">3 days ago</small>
+                            </div>
+                            <div class="flex-shrink-0 dropdown-notifications-actions">
+                              <a href="javascript:void(0)" class="dropdown-notifications-read">
+                                <span class="badge badge-dot"></span
+                              ></a>
+                              <a href="javascript:void(0)" class="dropdown-notifications-archive">
+                                <span class="icon-base ri ri-close-line"></span
+                              ></a>
+                            </div>
+                          </div>
+                        </li>
+                        <li class="list-group-item list-group-item-action dropdown-notifications-item marked-as-read">
+                          <div class="d-flex">
+                            <div class="flex-shrink-0 me-3">
+                              <div class="avatar">
+                                <img src="assets/img/avatars/5.png" alt="alt" class="rounded-circle" />
+                              </div>
+                            </div>
+                            <div class="flex-grow-1">
+                              <h6 class="small mb-50">Send connection request</h6>
+                              <small class="mb-1 d-block text-body">Peter sent you connection request</small>
+                              <small class="text-body-secondary">4 days ago</small>
+                            </div>
+                            <div class="flex-shrink-0 dropdown-notifications-actions">
+                              <a href="javascript:void(0)" class="dropdown-notifications-read">
+                                <span class="badge badge-dot"></span
+                              ></a>
+                              <a href="javascript:void(0)" class="dropdown-notifications-archive">
+                                <span class="icon-base ri ri-close-line"></span
+                              ></a>
+                            </div>
+                          </div>
+                        </li>
+                        <li class="list-group-item list-group-item-action dropdown-notifications-item">
+                          <div class="d-flex">
+                            <div class="flex-shrink-0 me-3">
+                              <div class="avatar">
+                                <img src="assets/img/avatars/6.png" alt="alt" class="rounded-circle" />
+                              </div>
+                            </div>
+                            <div class="flex-grow-1">
+                              <h6 class="small mb-50">New message from Jane</h6>
+                              <small class="mb-1 d-block text-body">Your have new message from Jane</small>
+                              <small class="text-body-secondary">5 days ago</small>
+                            </div>
+                            <div class="flex-shrink-0 dropdown-notifications-actions">
+                              <a href="javascript:void(0)" class="dropdown-notifications-read">
+                                <span class="badge badge-dot"></span
+                              ></a>
+                              <a href="javascript:void(0)" class="dropdown-notifications-archive">
+                                <span class="icon-base ri ri-close-line"></span
+                              ></a>
+                            </div>
+                          </div>
+                        </li>
+                        <li class="list-group-item list-group-item-action dropdown-notifications-item marked-as-read">
+                          <div class="d-flex">
+                            <div class="flex-shrink-0 me-3">
+                              <div class="avatar">
+                                <span class="avatar-initial rounded-circle bg-label-warning">
+                                  <i class="icon-base ri ri-error-warning-line"></i>
+                                </span>
+                              </div>
+                            </div>
+                            <div class="flex-grow-1">
+                              <h6 class="small mb-50">CPU is running high</h6>
+                              <small class="mb-1 d-block text-body"
+                                >CPU Utilization Percent is currently at 88.63%,</small
+                              >
+                              <small class="text-body-secondary">5 days ago</small>
+                            </div>
+                            <div class="flex-shrink-0 dropdown-notifications-actions">
+                              <a href="javascript:void(0)" class="dropdown-notifications-read">
+                                <span class="badge badge-dot"></span
+                              ></a>
+                              <a href="javascript:void(0)" class="dropdown-notifications-archive">
+                                <span class="icon-base ri ri-close-line"></span
+                              ></a>
+                            </div>
+                          </div>
+                        </li>
+                      </ul>
+                    </li>
+                    <li class="border-top">
+                      <div class="d-grid p-4">
+                        <a class="btn btn-primary btn-sm d-flex h-px-34" href="javascript:void(0);">
+                          <small class="align-middle">View all notifications</small>
+                        </a>
+                      </div>
+                    </li>
+                  </ul>
+                </li>
+                <!--/ Notification -->
+
+                <!-- User -->
+                <li class="nav-item navbar-dropdown dropdown-user dropdown">
+                  <a
+                    class="nav-link dropdown-toggle hide-arrow p-0"
+                    href="javascript:void(0);"
+                    data-bs-toggle="dropdown">
+                    <div class="avatar avatar-online">
+                      <img src="assets/img/avatars/1.png" alt="alt" class="rounded-circle" />
+                    </div>
+                  </a>
+                  <ul class="dropdown-menu dropdown-menu-end mt-3 py-2">
+                    <li>
+                      <a class="dropdown-item" href="pages-account-settings-account.html">
+                        <div class="d-flex align-items-center">
+                          <div class="flex-shrink-0 me-2">
+                            <div class="avatar avatar-online">
+                              <img
+                                src="assets/img/avatars/1.png"
+                                alt="alt"
+                                class="w-px-40 h-auto rounded-circle" />
+                            </div>
+                          </div>
+                          <div class="flex-grow-1">
+                            <h6 class="mb-0 small">John Doe</h6>
+                            <small class="text-body-secondary">Admin</small>
+                          </div>
+                        </div>
+                      </a>
+                    </li>
+                    <li>
+                      <div class="dropdown-divider"></div>
+                    </li>
+                    <li>
+                      <a class="dropdown-item" href="pages-profile-user.html">
+                        <i class="icon-base ri ri-user-3-line icon-22px me-2"></i>
+                        <span class="align-middle">My Profile</span>
+                      </a>
+                    </li>
+
+                    <li>
+                      <div class="dropdown-divider"></div>
+                    </li>
+
+                    <li>
+                      <div class="d-grid px-4 pt-2 pb-1">
+                        <a class="btn btn-danger d-flex" href="auth-login-cover.html" target="_blank">
+                          <small class="align-middle">Logout</small>
+                          <i class="icon-base ri ri-logout-box-r-line ms-2 icon-16px"></i>
+                        </a>
+                      </div>
+                    </li>
+                  </ul>
+                </li>
+                <!--/ User -->
+              </ul>
+            </div>
+          </nav>
+
+          <!-- / Navbar -->
+
+          <!-- Content wrapper -->
+          <div class="content-wrapper">
+            <!-- Content -->
+            <div class="container-xxl flex-grow-1 container-p-y">
+              <h4 class="py-3 mb-4">
+                <span class="text-muted fw-light">Tiện ích &amp; OCR THÔNG TIN CÔNG DÂN/</span> Trích xuất văn bản từ
+                hình ảnh
+              </h4>
+
+              <div class="row g-6">
+                <!-- 1. Image Input -->
+                <div class="col-12">
+                  <div class="card">
+                    <div class="card-header">
+                      <h5 class="card-title mb-0">1. Tải lên hình ảnh</h5>
+                    </div>
+                    <div class="card-body">
+                      <form action="/upload" class="dropzone needsclick" id="dropzone-basic">
+                        <div class="dz-message needsclick my-5">
+                          <p class="fs-4">Kéo thả file vào đây hoặc bấm để chọn ảnh</p>
+                          <small class="text-muted"
+                            >(Chỉ hỗ trợ các định dạng ảnh phổ biến. Ảnh sẽ không được tải lên máy chủ.)</small
+                          >
+                        </div>
+                        <div class="fallback">
+                          <input name="file" type="file" />
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 2. AI Configuration -->
+                <div class="col-12 d-none">
+                  <div class="card">
+                    <div class="card-header">
+                      <h5 class="card-title mb-0">2. Cấu hình AI</h5>
+                    </div>
+                    <div class="card-body">
+                      <form>
+                        <!-- Hidden username field for accessibility -->
+                        <input type="text" name="username" autocomplete="username" style="display: none" />
+                        <div class="mb-3">
+                          <label for="apiKey" class="form-label">API Key</label>
+                          <input
+                            type="password"
+                            class="form-control"
+                            id="apiKey"
+                            name="password"
+                            autocomplete="current-password"
+                            placeholder="&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;" />
+                        </div>
+                        <div class="mb-3">
+                          <label for="aiModel" class="form-label">Model</label>
+                          <select id="aiModel" class="form-select">
+                            <option value="gemini-2.0-flash-exp" selected>Gemini 2.0 Flash (Mặc định)</option>
+                            <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                            <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                            <option value="gemini-1.0-pro">Gemini 1.0 Pro</option>
+                          </select>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right Column: Convert, Result, Actions -->
+              <div class="row g-6">
+                <div class="col-12">
+                  <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                      <h5 class="card-title mb-0">3. Kết quả & Chỉnh sửa</h5>
+                      <button type="button" class="btn btn-primary" id="btn-convert">
+                        <span class="tf-icons ri-image-edit-line me-1"></span>
+                        <span class="d-none d-sm-inline-block">Chuyển đổi</span>
+                      </button>
+                    </div>
+                    <div class="card-body" style="min-height: 500px">
+                      <!-- Loading State -->
+                      <div id="loading-state" class="text-center my-5 d-none">
+                        <div class="spinner-border text-primary" role="status">
+                          <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Đang xử lý, vui lòng chờ...</p>
+                      </div>
+
+                      <!-- Error State -->
+                      <div id="error-state" class="alert alert-danger d-none" role="alert">
+                        <h6 class="alert-heading mb-1">Lỗi!</h6>
+                        <span id="error-message"></span>
+                      </div>
+
+                      <!-- Result State -->
+                      <div id="result-state" class="d-none">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                          <h6 class="mb-0"><i class="tf-icons ri-code-line me-1"></i>Kết quả JSON</h6>
+                          <div class="gap-2 d-flex">
+                            <button class="btn btn-sm btn-outline-danger" id="btn-reset">
+                              <i class="tf-icons ri-refresh-line me-1"></i>
+                              <span>Reset</span>
+                            </button>
+                            <button class="btn btn-sm btn-primary" id="btn-save">
+                              <i class="tf-icons ri-save-line me-1"></i>
+                              <span>Lưu kết quả</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        <!-- JSON View Only -->
+                        <div
+                          id="json-editor-container"
+                          style="
+                            height: 450px;
+                            border: 1px solid var(--bs-border-color);
+                            border-radius: var(--bs-border-radius);
+                          ">
+                          <pre
+                            class="h-100 m-0"><code class="json" id="json-output" style="height: 100%;" contenteditable="true"></code></pre>
+                        </div>
+                        <div id="json-validation-error" class="text-danger small mt-1"></div>
+                      </div>
+
+                      <!-- Initial State -->
+                      <div id="initial-state" class="text-center my-5">
+                        <i class="ri-file-text-line ri-4x text-muted"></i>
+                        <p class="mt-2 text-muted">Kết quả JSON sẽ được hiển thị ở đây.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Custom Prompt Section - Full Width -->
+              <div class="row g-6 mb-6">
+                <div class="col-12">
+                  <div class="card">
+                    <div class="card-header">
+                      <h5 class="card-title mb-0">
+                        <i class="tf-icons ri-edit-2-line me-2"></i>
+                        Prompt tùy chỉnh
+                      </h5>
+                    </div>
+                    <div class="card-body">
+                      <div class="mb-0">
+                        <label for="customPrompt" class="form-label"
+                          >Nhập prompt tùy chỉnh để điều chỉnh kết quả OCR</label
+                        >
+                        <textarea
+                          class="form-control"
+                          id="customPrompt"
+                          rows="20"
+                          placeholder="Ví dụ: Trích xuất các thông tin sau từ căn cước công dân: Họ tên, ngày sinh, quê quán, số CCCD... Định dạng kết quả dưới dạng JSON với các trường rõ ràng."></textarea>
+                        <div class="form-text">
+                          <i class="tf-icons ri-information-line me-1"></i>
+                          Để trống để sử dụng prompt mặc định. Prompt tùy chỉnh sẽ giúp AI hiểu rõ hơn về thông tin bạn
+                          muốn trích xuất.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- / Content -->
+
+            <!-- Footer -->
+            <footer class="content-footer footer bg-footer-theme">
+              <div class="container-xxl">
+                <div
+                  class="footer-container d-flex align-items-center justify-content-between py-4 flex-md-row flex-column">
+                  <div class="mb-2 mb-md-0">
+                    &#169;
+                    <span id="current-year">2025</span>
+                    , Design by
+                    <a href="https://themeselection.com" target="_blank" class="footer-link fw-medium"> 226-705</a>
+                  </div>
+                  <div class="d-none d-lg-inline-block">
+                    <a
+                      href="https://themeselection.com/item/category/admin-templates/"
+                      target="_blank"
+                      class="footer-link me-4"
+                      >Vì an ninh tổ quốc</a
+                    >
+                  </div>
+                </div>
+              </div>
+            </footer>
+            <!-- / Footer -->
+
+            <div class="content-backdrop fade"></div>
+          </div>
+          <!-- Content wrapper -->
+        </div>
+        <!-- / Layout page -->
+      </div>
+
+      <!-- Overlay -->
+      <div class="layout-overlay layout-menu-toggle"></div>
+
+      <!-- Drag Target Area To SlideIn Menu On Small Screens -->
+      <div class="drag-target"></div>
+    </div>
+    <!-- / Layout wrapper -->
+
+    <!-- Image Preview Modal (Slide from Right) -->
+    <div
+      class="modal fade"
+      id="imagePreviewModal"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="imagePreviewModalLabel"
+      aria-hidden="true">
+      <div class="modal-dialog modal-dialog-slideInRight modal-lg" role="document">
+        <div class="modal-content h-100">
+          <div class="modal-header">
+            <h5 class="modal-title" id="imagePreviewModalLabel">
+              <i class="icon-base ri ri-image-line me-2"></i>Xem ảnh chi tiết
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body p-0 position-relative">
+            <!-- Image container -->
+            <div class="image-preview-container" id="imageContainer">
+              <img id="modalImage" src="" alt="Preview" class="img-fluid w-100 h-100 object-fit-contain" />
+
+              <!-- Image info -->
+              <div class="image-info">
+                <div class="badge bg-dark">
+                  <i class="icon-base ri ri-information-line me-1"></i>
+                  <span id="imageInfo">Loading...</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Loading spinner -->
+            <div class="image-loading d-none" id="imageLoading">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Đang tải...</span>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+              <i class="icon-base ri ri-close-line me-1"></i>Đóng
+            </button>
+            <button type="button" class="btn btn-primary" id="downloadImage">
+              <i class="icon-base ri ri-download-line me-1"></i>Tải xuống
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Core JS -->
+    <script src="assets/vendor/js/theme.js"></script>
+
+    <!-- Vendors JS -->
+    <script src="assets/vendor/libs/dropzone/dropzone.js"></script>
+    <script src="assets/vendor/libs/highlight/highlight.js"></script>
+    <script src="assets/vendor/libs/clipboard/clipboard.js"></script>
+
+    <!-- Main JS -->
+
+    <script src="assets/js/main.js"></script>
+    <script src="assets/api/api-main.js"></script>
+    <script src="assets/api/api-noti-zalo-user.js"></script>
+    <!-- Page JS -->
+    <script src="assets/js/picture-to-text-cong-dan-new.js"></script>
+
+    <!-- Update current year without document.write -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        const currentYearSpan = document.getElementById('current-year');
+        if (currentYearSpan) {
+          currentYearSpan.textContent = new Date().getFullYear();
+        }
+      });
+    </script>
+  </body>
+</html>

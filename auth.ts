@@ -55,6 +55,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                             fullName: user.fullName,
                             groupIds: user.groupIds,
                             position: user.position,
+                            permissions: (user as any).permissions,
                         };
                     }
                 }

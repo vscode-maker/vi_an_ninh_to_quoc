@@ -1,0 +1,8 @@
+id_thanh_vien,id_cong_dan,ho_ten,gioi_tinh,ngay_sinh,quan_he_chu_ho,quan_he_cong_dan,so_cmnd_cccd,nghe_nghiep,ghi_chu
+CD001,,Nguyễn Văn A,Nam,1975-05-20,Chủ hộ,,12345678901,Kinh doanh,-
+CD002,,Nguyễn Thị C,Nữ,1978-11-02,Vợ,,12345678902,Giáo viên,-
+CD003,,Nguyễn Văn D,Nam,2000-07-15,Con trai,,12345678903,Sinh viên,-
+,,,,,,,,,
+,,,,,,,,,
+CD004,,Trần Thị B,Nữ,1980-09-10,Chủ hộ,,12345678904,Nhân viên VP,-
+CD005,,Trần Văn E,Nam,2005-03-18,Con trai,,12345678905,Học sinh,-
