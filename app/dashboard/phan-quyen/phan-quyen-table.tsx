@@ -356,7 +356,7 @@ export default function PhanQuyenTable({ initialUsers, availablePermissions }: a
                         value={targetUserIds}
                         onChange={setTargetUserIds}
                         filterOption={(input, option) =>
-                            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                            String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                         }
                         options={users
                             .filter((u: any) => u.id !== sourceUser?.id && u.role?.toLowerCase() !== 'admin')
