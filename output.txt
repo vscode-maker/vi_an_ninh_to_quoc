@@ -1,0 +1,121 @@
+Fetching users...
+Admin: {
+  soHieu: '226-705',
+  role: 'admin',
+  groupIds: '759a4e44ef25067b5f34 , 64ffb308996970372978 , a3771988f1ee18b041ff , d27f76408d2664783d37 , cf1caa215147b819e156 , 899a1cbde7db0e8557ca , 0857a4755f13b64def02 , 2f8dd2e65080b9dee091 , 5ae9cab548d3a18df8c2 , 6df20a009a6673382a77 , 1643b1c533a0dafe83b1 , ffb6c1545f31b66fef20 , 879f5872c6172f497606 , dfae3442aa2743791a36 , e03fc350f4351d6b4424 , 92e2dc194c7fa521fc6e',
+  password: '892003'
+}
+User: {
+  soHieu: '225-885',
+  role: 'user',
+  groupIds: 'cf1caa215147b819e156',
+  password: '123456'
+}
+Total Tasks: 321
+---------------------------------------------------
+--- Testing Google Drive Upload ---
+Uploading test_upload_1767519868873.txt...
+--- Google Drive Upload Debug ---
+Client Email: app-uploader@vianninhtoquoc-482816.iam.gserviceaccount.com
+Target Folder ID: 14-JiHrZQnzx7vdQEdY_DXE4lwGp5uIep
+File Name: test_upload_1767519868873.txt
+---------------------------------
+Google Drive Upload Error Details: {
+  "config": {
+    "url": "https://www.googleapis.com/drive/v3/files/11hY60DpXRniMx7FcOYgIRhJhOlOWF4Bz/permissions",
+    "method": "POST",
+    "apiVersion": "",
+    "userAgentDirectives": [
+      {
+        "product": "google-api-nodejs-client",
+        "version": "8.0.1",
+        "comment": "gzip"
+      }
+    ],
+    "data": {
+      "role": "reader",
+      "type": "anyone"
+    },
+    "headers": {},
+    "retry": true,
+    "body": "{\"role\":\"reader\",\"type\":\"anyone\"}",
+    "responseType": "unknown",
+    "duplex": "half",
+    "retryConfig": {
+      "currentRetryAttempt": 0,
+      "retry": 3,
+      "httpMethodsToRetry": [
+        "GET",
+        "HEAD",
+        "PUT",
+        "OPTIONS",
+        "DELETE"
+      ],
+      "noResponseRetries": 2,
+      "retryDelayMultiplier": 2,
+      "timeOfFirstRequest": 1767519872357,
+      "totalTimeout": 9007199254740991,
+      "maxRetryDelay": 9007199254740991,
+      "statusCodesToRetry": [
+        [
+          100,
+          199
+        ],
+        [
+          408,
+          408
+        ],
+        [
+          429,
+          429
+        ],
+        [
+          500,
+          599
+        ]
+      ]
+    }
+  },
+  "response": {
+    "size": 0,
+    "data": {
+      "error": {
+        "code": 404,
+        "message": "File not found: 11hY60DpXRniMx7FcOYgIRhJhOlOWF4Bz.",
+        "errors": [
+          {
+            "message": "File not found: 11hY60DpXRniMx7FcOYgIRhJhOlOWF4Bz.",
+            "domain": "global",
+            "reason": "notFound",
+            "location": "fileId",
+            "locationType": "parameter"
+          }
+        ]
+      }
+    },
+    "config": {
+      "url": "https://www.googleapis.com/drive/v3/files/11hY60DpXRniMx7FcOYgIRhJhOlOWF4Bz/permissions",
+      "method": "POST",
+      "apiVersion": "",
+      "userAgentDirectives": [
+        {
+          "product": "google-api-nodejs-client",
+          "version": "8.0.1",
+          "comment": "gzip"
+        }
+      ],
+      "data": {
+        "role": "reader",
+        "type": "anyone"
+      },
+      "headers": {},
+      "retry": true,
+      "body": "{\"role\":\"reader\",\"type\":\"anyone\"}",
+      "responseType": "unknown",
+      "duplex": "half"
+    }
+  },
+  "code": 404,
+  "status": 404
+}
+Upload Failed: File not found: 11hY60DpXRniMx7FcOYgIRhJhOlOWF4Bz.

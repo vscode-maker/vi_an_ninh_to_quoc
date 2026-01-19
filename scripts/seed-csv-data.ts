@@ -21,7 +21,7 @@ const FILES_TO_MODELS = [
     { file: 'thong_tin_phan_cong.csv', model: 'thongTinPhanCong' },
     { file: 'thong_tin_phuong_tien.csv', model: 'thongTinPhuongTien' },
     { file: 'thong_tin_tai_khoan.csv', model: 'thongTinTaiKhoan' },
-    { file: 'thong_tin_thanh_vien_trong_ho.csv', model: 'thongTinThanhVienTrongHo' },
+
     { file: 'thong_tin_thiet_hai.csv', model: 'thongTinThietHai' },
     { file: 'thong_tin_tien_an_tien_su.csv', model: 'thongTinTienAnTienSu' },
     { file: 'thong_tin_truy_na.csv', model: 'thongTinTruyNa' },

@@ -14,8 +14,7 @@ export default async function BoLuatPage({
     const pageSize = Number(searchParams?.pageSize) || 20;
     const search = searchParams?.search || '';
 
-    const data = await getBoLuatList(search, page);
-    const total = 1000; // Placeholder until action updated
+    const { data, total } = await getBoLuatList(search, page);
 
     return (
         <Suspense fallback={<div>Loading...</div>}>

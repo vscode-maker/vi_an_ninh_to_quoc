@@ -2,12 +2,15 @@
 'use client';
 
 import { useState } from 'react';
-import { Table, Button, Input, Modal, message, Popconfirm, Tag } from 'antd';
-import { PlusOutlined, DeleteOutlined, EditOutlined, SearchOutlined } from '@ant-design/icons';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useDebouncedCallback } from 'use-debounce';
 import NhanVienModal from './components/nhan-vien-modal';
 import { deleteUser } from '@/lib/user-actions';
+import { Table } from '@/app/ui/components/table';
+import { Button } from '@/app/ui/components/button';
+import { Input } from '@/app/ui/components/input';
+import { Tag } from '@/app/ui/components/tag';
+import { Plus, Trash2, Edit, Search } from 'lucide-react';
 
 export default function NhanVienTable({ initialData, total, currentPage, userPermissions = [], userRole }: any) {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -33,58 +36,81 @@ export default function NhanVienTable({ initialData, total, currentPage, userPer
     }, 300);
 
     const handleDelete = async (id: string) => {
+        if (!confirm('Xóa nhân viên này?')) return;
+
         const result = await deleteUser(id);
         if (result.success) {
-            message.success(result.message);
+            alert(result.message);
         } else {
-            message.error(result.message);
+            alert(result.message);
         }
     };
 
     const columns = [
-        { title: 'Số hiệu', dataIndex: 'soHieu', key: 'soHieu', width: 100 },
+        { title: 'Số hiệu', dataIndex: 'soHieu', key: 'soHieu', width: '10%' },
         { title: 'Họ tên', dataIndex: 'fullName', key: 'fullName' },
         { title: 'Chức vụ', dataIndex: 'position', key: 'position' },
         {
             title: 'Vai trò',
             dataIndex: 'role',
             key: 'role',
-            render: (role: string) => <Tag color={role?.toLowerCase() === 'admin' ? 'red' : 'blue'}>{role}</Tag>
+            render: (role: string) => (
+                <Tag color={role?.toLowerCase() === 'admin' ? 'red' : 'blue'}>
+                    {role}
+                </Tag>
+            )
         },
         {
             title: 'Thao tác',
             key: 'action',
             render: (_: any, record: any) => (
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div className="flex gap-2">
                     {canEdit && (
                         <Button
-                            icon={<EditOutlined />}
-                            size="small"
+                            variant="ghost"
+                            size="sm"
+                            icon={<Edit size={16} />}
                             onClick={() => { setEditingRecord(record); setIsModalOpen(true); }}
                         />
                     )}
                     {canDelete && (
-                        <Popconfirm title="Xóa nhân viên này?" onConfirm={() => handleDelete(record.id)}>
-                            <Button icon={<DeleteOutlined />} size="small" danger />
-                        </Popconfirm>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            icon={<Trash2 size={16} />}
+                            onClick={() => handleDelete(record.id)}
+                        />
                     )}
                 </div>
             )
         }
     ];
 
+    // Simple Pagination Controls
+    const totalPages = Math.ceil(total / 10);
+    const handlePageChange = (page: number) => {
+        const params = new URLSearchParams(searchParams);
+        params.set('page', page.toString());
+        replace(`${pathname}?${params.toString()}`);
+    };
+
     return (
         <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                <Input
-                    placeholder="Tìm kiếm nhân viên..."
-                    prefix={<SearchOutlined />}
-                    onChange={(e) => handleSearch(e.target.value)}
-                    style={{ width: 300 }}
-                    defaultValue={searchParams.get('query')?.toString()}
-                />
+            <div className="flex justify-between items-center mb-4">
+                <div className="relative w-[300px]">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                        <Search size={16} />
+                    </span>
+                    <Input
+                        placeholder="Tìm kiếm nhân viên..."
+                        onChange={(e) => handleSearch(e.target.value)}
+                        className="pl-10"
+                        defaultValue={searchParams.get('query')?.toString()}
+                    />
+                </div>
                 {canCreate && (
-                    <Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditingRecord(null); setIsModalOpen(true); }}>
+                    <Button icon={<Plus size={16} />} onClick={() => { setEditingRecord(null); setIsModalOpen(true); }}>
                         Thêm nhân viên
                     </Button>
                 )}
@@ -94,17 +120,32 @@ export default function NhanVienTable({ initialData, total, currentPage, userPer
                 dataSource={initialData}
                 columns={columns}
                 rowKey="id"
-                pagination={{
-                    current: currentPage,
-                    total: total,
-                    pageSize: 10,
-                    onChange: (page) => {
-                        const params = new URLSearchParams(searchParams);
-                        params.set('page', page.toString());
-                        replace(`${pathname}?${params.toString()}`);
-                    }
-                }}
             />
+
+            {/* Pagination UI */}
+            {totalPages > 1 && (
+                <div className="flex justify-center gap-2 mt-4">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={currentPage <= 1}
+                        onClick={() => handlePageChange(Number(currentPage) - 1)}
+                    >
+                        Previous
+                    </Button>
+                    <span className="flex items-center px-4 text-sm text-gray-600">
+                        Page {currentPage} of {totalPages}
+                    </span>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={currentPage >= totalPages}
+                        onClick={() => handlePageChange(Number(currentPage) + 1)}
+                    >
+                        Next
+                    </Button>
+                </div>
+            )}
 
             <NhanVienModal
                 open={isModalOpen}

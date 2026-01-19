@@ -1,8 +1,11 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { Modal, Avatar, Typography, Spin, Empty, Row, Col, Input, Button, message } from 'antd';
-import { UserOutlined, SendOutlined } from '@ant-design/icons';
+import React, { useEffect, useState, useRef } from 'react';
+import { Modal } from '@/app/ui/components/modal';
+import { Button } from '@/app/ui/components/button';
+import { TextArea } from '@/app/ui/components/textarea';
+import { Spinner } from '@/app/ui/components/spinner';
+import { User, Send } from 'lucide-react';
 import { fetchChatMessages, addChatMessage, ChatMessage } from '@/lib/actions/chat';
 import dayjs from 'dayjs';
 
@@ -13,13 +16,18 @@ interface ChatModalProps {
     onMessageAdded?: () => void;
 }
 
+// Simple Toast fallback
+const toast = (msg: string, type: 'success' | 'error' = 'success') => {
+    console.log(`[${type.toUpperCase()}] ${msg}`);
+};
+
 export default function ChatModal({ groupName, open, onCancel, onMessageAdded }: ChatModalProps) {
     const [loading, setLoading] = useState(false);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [inputLeft, setInputLeft] = useState('');
     const [inputRight, setInputRight] = useState('');
     const [sending, setSending] = useState(false);
-    const [messageApi, contextHolder] = message.useMessage();
+    const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // Parse group name "A - B"
     const [personLeft, personRight] = groupName ? groupName.split('-').map(s => s.trim()) : ['', ''];
@@ -32,10 +40,33 @@ export default function ChatModal({ groupName, open, onCancel, onMessageAdded }:
         }
     };
 
+    useEffect(() => {
+        if (open && groupName) {
+            setLoading(true);
+            fetchChatMessages(groupName)
+                .then(data => {
+                    setMessages(data);
+                })
+                .catch(err => {
+                    console.error('ChatModal Error:', err);
+                    toast('Không thể tải tin nhắn', 'error');
+                })
+                .finally(() => setLoading(false));
+
+            // Clear inputs
+            setInputLeft('');
+            setInputRight('');
+        }
+    }, [open, groupName]);
+
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [messages]);
+
     const handleSend = async (sender: string, receiver: string, content: string, setInput: (v: string) => void) => {
         if (!content.trim()) return;
         if (!sender || !receiver) {
-            messageApi.error('Không xác định được danh tính người gửi/nhận từ tên nhóm');
+            toast('Không xác định được danh tính người gửi/nhận từ tên nhóm', 'error');
             return;
         }
 
@@ -50,189 +81,149 @@ export default function ChatModal({ groupName, open, onCancel, onMessageAdded }:
             });
             setInput('');
             refreshMessages();
-            messageApi.success('Đã gửi tin nhắn');
+            toast('Đã gửi tin nhắn');
             if (onMessageAdded) {
                 onMessageAdded();
             }
         } catch (error) {
             console.error(error);
-            messageApi.error('Gửi thất bại');
+            toast('Gửi thất bại', 'error');
         } finally {
             setSending(false);
         }
     };
 
-    const footerNode = (
-        <div style={{ marginTop: '16px', borderTop: '1px solid #f0f0f0', paddingTop: '16px' }}>
-            {/* Left Input: Reciever Info (Left in Group Name) */}
-            <Row gutter={24}>
-                <Col span={12} style={{ borderRight: '1px solid #f0f0f0' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <Typography.Text type="secondary">Người nhận: <strong>{personLeft}</strong></Typography.Text>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                            <Input.TextArea
-                                placeholder={`Nhập nội dung...`}
-                                rows={1}
-                                value={inputLeft}
-                                onChange={e => setInputLeft(e.target.value)}
-                                style={{ flex: 1 }}
-                                onKeyDown={e => {
-                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                        e.preventDefault();
-                                        handleSend(personLeft, personRight, inputLeft, setInputLeft);
-                                    }
-                                }}
-                            />
-                            <Button
-                                type="primary"
-                                icon={<SendOutlined />}
-                                loading={sending}
-                                onClick={() => handleSend(personLeft, personRight, inputLeft, setInputLeft)}
-                            >
-                                Gửi
-                            </Button>
-                        </div>
+    const Footer = (
+        <div className="w-full grid grid-cols-2 gap-6 pt-4 border-t border-gray-100">
+            {/* Left Input */}
+            <div className="border-r border-gray-100 pr-6">
+                <div className="flex flex-col gap-2">
+                    <span className="text-sm text-gray-500">Người nhận: <strong>{personLeft}</strong></span>
+                    <div className="flex gap-2 items-start">
+                        <TextArea
+                            placeholder="Nhập nội dung..."
+                            rows={1}
+                            value={inputLeft}
+                            onChange={e => setInputLeft(e.target.value)}
+                            onKeyDown={e => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    handleSend(personLeft, personRight, inputLeft, setInputLeft);
+                                }
+                            }}
+                            className="flex-1"
+                        />
+                        <Button
+                            variant="primary"
+                            icon={<Send size={16} />}
+                            loading={sending}
+                            onClick={() => handleSend(personLeft, personRight, inputLeft, setInputLeft)}
+                        >
+                            Gửi
+                        </Button>
                     </div>
-                </Col>
-                {/* Right Input: Sender Info (Right in Group Name) */}
-                <Col span={12}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <Typography.Text type="secondary">Người gửi: <strong>{personRight}</strong></Typography.Text>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                            <Input.TextArea
-                                placeholder={`Nhập nội dung...`}
-                                rows={1}
-                                value={inputRight}
-                                onChange={e => setInputRight(e.target.value)}
-                                style={{ flex: 1 }}
-                                onKeyDown={e => {
-                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                        e.preventDefault();
-                                        handleSend(personRight, personLeft, inputRight, setInputRight);
-                                    }
-                                }}
-                            />
-                            <Button
-                                type="primary"
-                                icon={<SendOutlined />}
-                                loading={sending}
-                                onClick={() => handleSend(personRight, personLeft, inputRight, setInputRight)}
-                            >
-                                Gửi
-                            </Button>
-                        </div>
+                </div>
+            </div>
+
+            {/* Right Input */}
+            <div className="pl-2">
+                <div className="flex flex-col gap-2">
+                    <span className="text-sm text-gray-500">Người gửi: <strong>{personRight}</strong></span>
+                    <div className="flex gap-2 items-start">
+                        <TextArea
+                            placeholder="Nhập nội dung..."
+                            rows={1}
+                            value={inputRight}
+                            onChange={e => setInputRight(e.target.value)}
+                            onKeyDown={e => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    handleSend(personRight, personLeft, inputRight, setInputRight);
+                                }
+                            }}
+                            className="flex-1"
+                        />
+                        <Button
+                            variant="primary"
+                            icon={<Send size={16} />}
+                            loading={sending}
+                            onClick={() => handleSend(personRight, personLeft, inputRight, setInputRight)}
+                        >
+                            Gửi
+                        </Button>
                     </div>
-                </Col>
-            </Row>
+                </div>
+            </div>
         </div>
     );
-
-    const messagesEndRef = React.useRef<HTMLDivElement>(null);
-
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    };
-
-    useEffect(() => {
-        scrollToBottom();
-    }, [messages]);
-
-    useEffect(() => {
-        if (open && groupName) {
-            setLoading(true);
-            fetchChatMessages(groupName)
-                .then(data => {
-                    setMessages(data);
-                })
-                .catch(err => {
-                    console.error('ChatModal Error:', err);
-                    messageApi.error('Không thể tải tin nhắn');
-                })
-                .finally(() => setLoading(false));
-
-            // Clear inputs
-            setInputLeft('');
-            setInputRight('');
-        }
-    }, [open, groupName]);
 
     return (
         <Modal
             title={`Nội dung chat: ${groupName}`}
-            open={open}
-            onCancel={onCancel}
-            footer={footerNode}
+            isOpen={open}
+            onClose={onCancel}
             width={900}
-            styles={{ body: { padding: 0 } }} // Remove default padding/scroll from modal body to control it manually
+            footer={Footer}
+            className="flex flex-col"
         >
-            {contextHolder}
-            {loading ? (
-                <div style={{ textAlign: 'center', marginTop: '50px', height: '500px' }}><Spin size="large" /></div>
-            ) : messages.length === 0 ? (
-                <div style={{ height: '500px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Empty description="Không có nội dung chat nào" />
-                </div>
-            ) : (
-                <div className="chat-container" style={{ height: '500px', overflowY: 'auto', padding: '20px', backgroundColor: '#e2e4e7' }}>
-                    {messages.map((msg, index) => {
-                        const isRight = msg.nguoiGui === personRight;
+            <div className="h-[500px] flex flex-col bg-gray-100 p-0 rounded-lg overflow-hidden">
+                {loading ? (
+                    <div className="flex items-center justify-center h-full">
+                        <Spinner size="lg" />
+                    </div>
+                ) : messages.length === 0 ? (
+                    <div className="flex items-center justify-center h-full text-gray-400">
+                        Không có nội dung chat nào
+                    </div>
+                ) : (
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                        {messages.map((msg, index) => {
+                            const isRight = msg.nguoiGui === personRight;
+                            const isSequence = index > 0 && messages[index - 1].nguoiGui === msg.nguoiGui;
 
-                        // Check sequence (Same sender as previous)
-                        // For Left side, we want Avatar on the FIRST message of the sequence (Header)
-                        const isSequence = index > 0 && messages[index - 1].nguoiGui === msg.nguoiGui;
-
-                        return (
-                            <div key={msg.id} style={{
-                                marginBottom: isSequence ? '4px' : '16px',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: isRight ? 'flex-end' : 'flex-start'
-                            }}>
-                                <div style={{ display: 'flex', flexDirection: isRight ? 'row-reverse' : 'row', alignItems: 'flex-start', maxWidth: '80%' }}>
-                                    {/* Avatar: Only for Left side, and only for first in sequence */}
-                                    {!isRight && (
-                                        <div style={{ width: '32px', marginRight: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                            {!isSequence ? <Avatar size="small" icon={<UserOutlined />} /> : <div style={{ width: '24px' }} />}
-                                        </div>
-                                    )}
-
-                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: isRight ? 'flex-end' : 'flex-start' }}>
-                                        {/* Name header for Left side first msg? Zalo usually hides it in 1-on-1. 
-                                            But let's show it small if checking the group name isn't enough context.
-                                            User requested "show 2 user info interleaved by time". 
-                                            I'll show name only if not sequence.
-                                        */}
-                                        {!isRight && !isSequence && (
-                                            <Typography.Text type="secondary" style={{ fontSize: '11px', marginBottom: '2px', marginLeft: '2px' }}>
-                                                {msg.nguoiGui}
-                                            </Typography.Text>
+                            return (
+                                <div key={msg.id || index} className={`flex flex-col ${isRight ? 'items-end' : 'items-start'}`}>
+                                    <div className={`flex ${isRight ? 'flex-row-reverse' : 'flex-row'} items-start max-w-[80%] gap-2`}>
+                                        {/* Avatar */}
+                                        {!isRight && (
+                                            <div className="w-8 flex flex-col items-center">
+                                                {!isSequence ? (
+                                                    <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
+                                                        <User size={16} className="text-gray-600" />
+                                                    </div>
+                                                ) : <div className="w-8" />}
+                                            </div>
                                         )}
 
-                                        {/* Bubble */}
-                                        <div style={{
-                                            backgroundColor: isRight ? '#dcf4ff' : '#ffffff',
-                                            padding: '8px 12px',
-                                            borderRadius: '8px',
-                                            boxShadow: '0 1px 1px rgba(0,0,0,0.05)',
-                                            position: 'relative',
-                                            wordBreak: 'break-word',
-                                            border: isRight ? '1px solid #c8e8ff' : '1px solid #e8e8e8'
-                                        }}>
-                                            <Typography.Text>{msg.noiDung}</Typography.Text>
-                                        </div>
+                                        <div className={`flex flex-col ${isRight ? 'items-end' : 'items-start'}`}>
+                                            {/* Name */}
+                                            {!isRight && !isSequence && (
+                                                <span className="text-xs text-gray-500 mb-1 ml-1">
+                                                    {msg.nguoiGui}
+                                                </span>
+                                            )}
 
-                                        {/* Time Footer */}
-                                        <Typography.Text type="secondary" style={{ fontSize: '10px', marginTop: '2px', opacity: 0.7 }}>
-                                            {msg.thoiGian ? dayjs(msg.thoiGian).format('HH:mm') : ''}
-                                        </Typography.Text>
+                                            {/* Bubble */}
+                                            <div className={`
+                                                px-3 py-2 rounded-lg text-sm shadow-sm relative break-words
+                                                ${isRight ? 'bg-blue-100 text-gray-900 border border-blue-200' : 'bg-white text-gray-900 border border-gray-200'}
+                                            `}>
+                                                {msg.noiDung}
+                                            </div>
+
+                                            {/* Time */}
+                                            <span className="text-[10px] text-gray-400 mt-1">
+                                                {msg.thoiGian ? dayjs(msg.thoiGian).format('HH:mm') : ''}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        );
-                    })}
-                    <div ref={messagesEndRef} />
-                </div>
-            )}
+                            );
+                        })}
+                        <div ref={messagesEndRef} />
+                    </div>
+                )}
+            </div>
         </Modal>
     );
 }

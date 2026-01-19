@@ -115,18 +115,7 @@ export const MODULE_CONFIG: ModuleConfig = {
             { name: 'ghiChu', label: 'Ghi chú', type: 'textarea' },
         ]
     },
-    'thanh-vien': {
-        model: 'thongTinThanhVienTrongHo',
-        title: 'Thành viên trong hộ',
-        primaryKey: 'idThanhVien',
-        fields: [
-            { name: 'idThanhVien', label: 'ID Thành viên', type: 'text', required: true },
-            { name: 'hoTen', label: 'Họ tên', type: 'text' },
-            { name: 'ngaySinh', label: 'Ngày sinh', type: 'text' },
-            { name: 'quanHeChuHo', label: 'Quan hệ chủ hộ', type: 'text' },
-            { name: 'soCmndCccd', label: 'CMND/CCCD', type: 'text' },
-        ]
-    },
+
     'thiet-hai': {
         model: 'thongTinThietHai',
         title: 'Thông tin thiệt hại',

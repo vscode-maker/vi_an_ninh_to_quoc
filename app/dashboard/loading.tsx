@@ -1,33 +1,35 @@
 'use client';
 
-import { Skeleton, Space } from 'antd';
-
 export default function Loading() {
     return (
-        <div>
+        <div className="animate-pulse">
             {/* Header / Title area */}
-            <div style={{ marginBottom: 24 }}>
-                <Skeleton.Input active size="large" style={{ width: 300, height: 40 }} />
+            <div className="mb-6">
+                <div className="h-10 bg-gray-200 rounded w-[300px]"></div>
             </div>
 
             {/* Main Content Area (mimicking table/card) */}
-            <div style={{
-                background: '#fff',
-                borderRadius: 8,
-                padding: 24,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-            }}>
+            <div className="bg-white rounded-lg p-6 shadow-sm">
                 {/* Toolbar area */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
-                    <Space>
-                        <Skeleton.Button active size="default" shape="default" style={{ width: 120 }} />
-                        <Skeleton.Button active size="default" shape="default" />
-                    </Space>
-                    <Skeleton.Input active style={{ width: 200 }} />
+                <div className="flex justify-between mb-6">
+                    <div className="flex gap-2">
+                        <div className="h-9 bg-gray-200 rounded w-[120px]"></div>
+                        <div className="h-9 bg-gray-200 rounded w-[40px]"></div>
+                    </div>
+                    <div className="h-9 bg-gray-200 rounded w-[200px]"></div>
                 </div>
 
                 {/* Table rows simulation */}
-                <Skeleton active paragraph={{ rows: 12 }} title={false} />
+                <div className="space-y-4">
+                    <div className="h-4 bg-gray-200 rounded w-full"></div>
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                    <div className="h-4 bg-gray-200 rounded w-full"></div>
+                    <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                    <div className="h-4 bg-gray-200 rounded w-full"></div>
+                    <div className="h-4 bg-gray-200 rounded w-4/5"></div>
+                    <div className="h-4 bg-gray-200 rounded w-full"></div>
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                </div>
             </div>
         </div>
     );

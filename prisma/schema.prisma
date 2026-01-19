@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,98 +8,106 @@ datasource db {
 }
 
 model User {
-  id          String  @id
-  soHieu      String  @unique @map("so_hieu")
-  fullName    String  @map("ho_va_ten")
-  gender      String? @map("gioi_tinh")
-  phoneNumber String? @map("so_dien_thoai")
-  unit        String? @map("don_vi")
-  team        String? @map("doi")
-  group       String? @map("to")
-  position    String? @map("chuc_vu")
-  title       String? @map("chuc_danh")
-  email       String?
-  zaloId      String? @map("user_id_zalo")
-  password    String
-  avatar      String?
-  groupIds    String? @map("group_id") // Stores comma separated IDs
-  role        String  @map("vai_tro")
-  permissions Json?   @map("quyen_han") // List of permission strings: "VIEW_CITIZEN", "EDIT_CITIZEN", etc.
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  recordedTasks Task[] // Opposite relation field
+  id            String   @id
+  soHieu        String   @unique @map("so_hieu")
+  fullName      String   @map("ho_va_ten")
+  gender        String?  @map("gioi_tinh")
+  phoneNumber   String?  @map("so_dien_thoai")
+  unit          String?  @map("don_vi")
+  team          String?  @map("doi")
+  group         String?  @map("to")
+  position      String?  @map("chuc_vu")
+  title         String?  @map("chuc_danh")
+  email         String?
+  zaloId        String?  @map("user_id_zalo")
+  password      String
+  avatar        String?
+  groupIds      String?  @map("group_id")
+  role          String   @map("vai_tro")
+  permissions   Json?    @map("quyen_han")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  recordedTasks Task[]
 
   @@map("users")
 }
 
 model CongDan {
-  id              String    @id @map("id_cong_dan")
-  hoTen           String    @map("ho_ten")
-  soCMND          String?   @map("so_CMND")
-  soCCCD          String?   @map("so_CCCD") // Note: The CSV only had so_CMND broadly, but reference JS uses both. CSV col 4 is so_CMND or CCCD.
-  // CSV header has ho_ten twice, likely header error, mapped 2nd to something else? or ignoring.
-  // CSV structure: id, ho_ten, ho_ten(dup?), so_CMND, tinh_trang_hon_nhan, gioi_tinh, ngay_sinh, que_quan, dan_toc, ton_giao, nghe_nghiep, hinh_anh_cong_dan, scan_cccd, ngay_cap, noi_cap, noi_dang_ky_khai_sinh, noi_thuong_tru, noi_o_hien_tai, so_dien_thoai, ghi_chu, nguoi_tao, ngay_tao, nguoi_cap_nhat, ngay_cap_nhat
-  
-  tinhTrangHonNhan String?  @map("tinh_trang_hon_nhan")
-  gioiTinh        String?   @map("gioi_tinh")
-  ngaySinh        String?   @map("ngay_sinh") // CSV format dd/mm/yyyy, keep string for now or parse? String safer for legacy.
-  queQuan         String?   @map("que_quan")
-  danToc          String?   @map("dan_toc")
-  tonGiao         String?   @map("ton_giao")
-  ngheNghiep      String?   @map("nghe_nghiep")
-  hinhAnh         String?   @map("hinh_anh_cong_dan")
-  scanCCCD        String?   @map("scan_cccd")
-  ngayCap         String?   @map("ngay_cap")
-  noiCap          String?   @map("noi_cap")
-  noiDangKyKhaiSinh String? @map("noi_dang_ky_khai_sinh")
-  noiThuongTru    String?   @map("noi_thuong_tru")
-  noiOHienTai     String?   @map("noi_o_hien_tai")
-  soDienThoai     String?   @map("so_dien_thoai")
-  ghiChu          String?   @map("ghi_chu")
-
-  nguoiTao        String?   @map("nguoi_tao")
-  ngayTao         DateTime? @default(now()) @map("ngay_tao")
-  nguoiCapNhat    String?   @map("nguoi_cap_nhat")
-  ngayCapNhat     DateTime? @updatedAt @map("ngay_cap_nhat")
+  id                String          @id @map("id_cong_dan")
+  hoTen             String          @map("ho_ten")
+  soCMND            String?         @map("so_CMND")
+  soCCCD            String?         @map("so_CCCD")
+  tinhTrangHonNhan  String?         @map("tinh_trang_hon_nhan")
+  gioiTinh          String?         @map("gioi_tinh")
+  ngaySinh          String?         @map("ngay_sinh")
+  queQuan           String?         @map("que_quan")
+  danToc            String?         @map("dan_toc")
+  tonGiao           String?         @map("ton_giao")
+  ngheNghiep        String?         @map("nghe_nghiep")
+  hinhAnh           String?         @map("hinh_anh_cong_dan")
+  scanCCCD          String?         @map("scan_cccd")
+  ngayCap           String?         @map("ngay_cap")
+  noiCap            String?         @map("noi_cap")
+  noiDangKyKhaiSinh String?         @map("noi_dang_ky_khai_sinh")
+  noiThuongTru      String?         @map("noi_thuong_tru")
+  noiOHienTai       String?         @map("noi_o_hien_tai")
+  soDienThoai       String?         @map("so_dien_thoai")
+  ghiChu            String?         @map("ghi_chu")
+  nguoiTao          String?         @map("nguoi_tao")
+  ngayTao           DateTime?       @default(now()) @map("ngay_tao")
+  nguoiCapNhat      String?         @map("nguoi_cap_nhat")
+  ngayCapNhat       DateTime?       @updatedAt @map("ngay_cap_nhat")
+  chuHo             Boolean         @default(false) @map("chu_ho")
+  maHoKhau          String?         @map("ma_ho_khau")
+  quanHe1           QuanHeGiaDinh[] @relation("QuanHe1")
+  quanHe2           QuanHeGiaDinh[] @relation("QuanHe2")
 
   @@map("cong_dan")
 }
 
+model QuanHeGiaDinh {
+  id           String   @id @default(uuid())
+  idCongDan1   String   @map("id_cong_dan_1")
+  idCongDan2   String   @map("id_cong_dan_2")
+  moiQuanHe    String   @map("moi_quan_he")
+  thongTinThem Json?    @map("thong_tin_them")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  congDan1     CongDan  @relation("QuanHe1", fields: [idCongDan1], references: [id])
+  congDan2     CongDan  @relation("QuanHe2", fields: [idCongDan2], references: [id])
+
+  @@map("quan_he_gia_dinh")
+}
+
 model Task {
-  id              String    @id
-  requestDate     DateTime? @map("ngay_gio_ghi_chu")
-  requesterName   String?   @map("ten_nguoi_ghi_chu")
-  groupName       String?   @map("nhom")
-  targetName      String?   @map("ho_ten_doi_tuong")
-  accountName     String?   @map("ten_tai_khoan")
-  accountNumber   String?   @map("so_tai_khoan")
-  bankName        String?   @map("ngan_hang")
-  phoneNumber     String?   @map("so_dien_thoai")
-  carrier         String?   @map("nha_mang")
-  documentInfo    String?   @map("thong_tin_van_ban")
-  executionUnit   String?   @map("don_vi_thuc_hien")
-  content         String?   @map("noi_dung")
-  deadline        DateTime? @map("thoi_han")
-  progressWarning String?   @map("canh_bao_tien_do")
-  requestType     String?   @map("yeu_cau")
-  status          String?   @map("trang_thai")
-  notes           Json?     @map("ghi_chu")
-  attachments     Json?     @map("dinh_kem") // [{ name, url, fileId, mimeType }]
-  groupId         String?   @map("group_id")
-  qrCode          String?   @map("qr_code")
-  socialAccountName String? @map("ten_tai_khoan_mxh")
-  moreInfo        Json?     @map("thong_tin_them")
-  
-  // New Relation to User via soHieu
-  recorderId      String?   @map("id_nguoi_ghi_chu")
-  recorder        User?     @relation(fields: [recorderId], references: [soHieu])
-
-  fileAttachments FileAttach[] // Relation to FileAttach
-
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  id                String       @id
+  requestDate       DateTime?    @map("ngay_gio_ghi_chu")
+  requesterName     String?      @map("ten_nguoi_ghi_chu")
+  groupName         String?      @map("nhom")
+  targetName        String?      @map("ho_ten_doi_tuong")
+  accountName       String?      @map("ten_tai_khoan")
+  accountNumber     String?      @map("so_tai_khoan")
+  bankName          String?      @map("ngan_hang")
+  phoneNumber       String?      @map("so_dien_thoai")
+  carrier           String?      @map("nha_mang")
+  documentInfo      String?      @map("thong_tin_van_ban")
+  executionUnit     String?      @map("don_vi_thuc_hien")
+  content           String?      @map("noi_dung")
+  deadline          DateTime?    @map("thoi_han")
+  progressWarning   String?      @map("canh_bao_tien_do")
+  requestType       String?      @map("yeu_cau")
+  status            String?      @map("trang_thai")
+  notes             Json?        @map("ghi_chu")
+  attachments       Json?        @map("dinh_kem")
+  groupId           String?      @map("group_id")
+  qrCode            String?      @map("qr_code")
+  socialAccountName String?      @map("ten_tai_khoan_mxh")
+  moreInfo          Json?        @map("thong_tin_them")
+  recorderId        String?      @map("id_nguoi_ghi_chu")
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
+  recorder          User?        @relation(fields: [recorderId], references: [soHieu])
+  fileAttachments   FileAttach[]
 
   @@index([status, updatedAt])
   @@index([groupId, status])
@@ -110,30 +115,24 @@ model Task {
 }
 
 model FileAttach {
-  fileId      String    @id @map("id_file")
-  taskId      String?   @map("id_unique") // Optional relation in case task doesn't exist
-  fileName    String?   @map("name_file")
-  note        String?   @map("ghi_chu")
-  groupId     String?   @map("id")
-  updatedAt   DateTime? @map("ngay_update")
-  fileLink    String?   @map("link_file")
-  fileType    String?   @map("loai_file")
-  moreInfo    Json?     @map("thong_tin_them")
-
-  // Relation to Task (optional enforced)
-  // task        Task?     @relation(fields: [taskId], references: [id]) 
-  // Disable relation enforcement for now to allow import even if parent task missing, or handle in code?
-  // Prisma relations require the parent to exist. 
-  // Let's rely on standard relation but map it.
-  task        Task?     @relation(fields: [taskId], references: [id])
+  fileId    String    @id @map("id_file")
+  taskId    String?   @map("id_unique")
+  fileName  String?   @map("name_file")
+  note      String?   @map("ghi_chu")
+  groupId   String?   @map("id")
+  updatedAt DateTime? @map("ngay_update")
+  fileLink  String?   @map("link_file")
+  fileType  String?   @map("loai_file")
+  moreInfo  Json?     @map("thong_tin_them")
+  task      Task?     @relation(fields: [taskId], references: [id])
 
   @@map("file_attach")
 }
 
 model Setting {
-  id    Int     @id @default(autoincrement())
-  type  String  @map("type")
-  value String  @map("value") @db.Text
+  id    Int    @id @default(autoincrement())
+  type  String @map("type")
+  value String @map("value")
 
   @@map("setting")
 }
@@ -150,10 +149,6 @@ model GroupZalo {
   @@map("group_zalo")
 }
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 5c9e8ae (Fix import path and update tasks)
 model Permission {
   code        String  @id @map("code")
   name        String  @map("name")
@@ -162,276 +157,247 @@ model Permission {
 
   @@map("permissions")
 }
-<<<<<<< HEAD
-
-// --- NEW MODULES FROM CSV ---
-
-// --- NEW MODULES FROM CSV ---
 
 model DataDonAn {
-  id                String    @id @map("id_data_don_an")
-  phanLoai         String?   @map("phan_loai")
-  trichYeu         String?   @map("trich_yeu")
-  noiDung          String?   @map("noi_dung")
-  ngayXayRa        String?   @map("ngay_xay_ra")
-  noiXayRa         String?   @map("noi_xay_ra")
-  ngayTiepNhan     String?   @map("ngay_tiep_nhan")
-  donViTiepNhan    String?   @map("don_vi_tiep_nhan")
-  ngayChuyenCoQuanDieuTra   String?   @map("ngay_chuyen_co_quan_dieu_tra")
-  donViThuLyChinh  String?   @map("don_vi_thu_ly_chinh")
-  canhBaoTienDo    String?   @map("canh_bao_tien_do")
-  trangThai        String?   @map("trang_thai")
-  hinhThucGiaiQuyet String?  @map("hinh_thuc_giai_quyet")
-  donViQuanLy      String?   @map("don_vi_quan_ly")
-  donViNhanHoSo    String?   @map("don_vi_nhan_ho_so")
-  soLuuTru         String?   @map("so_luu_tru")
-  ghiChu           String?   @map("ghi_chu")
-  
-  // Relations
-  bienPhapNganChan       BienPhapNganChan[]
-  hanhViToiDanh         HanhViToiDanh[]
-  nguoiThamGiaToTung    NguoiThamGiaToTung[]
-  quaTrinhDieuTra       QuaTrinhDieuTra[]
-  thongTinCongVan       ThongTinCongVan[]
-  thongTinPhanCong      ThongTinPhanCong[]
-  // thongTinPhuongTien: No FK in CSV
-  // thongTinTaiKhoan: No FK in CSV
-  thongTinThanhVien     ThongTinThanhVienTrongHo[]
-  thongTinThietHai      ThongTinThietHai[]
-  thongTinTienAn        ThongTinTienAnTienSu[]
-  thongTinTruyNa        ThongTinTruyNa[]
-  thongTinVatChung      ThongTinVatChung[]
-  
+  id                      String                     @id @map("id_data_don_an")
+  phanLoai                String?                    @map("phan_loai")
+  trichYeu                String?                    @map("trich_yeu")
+  noiDung                 String?                    @map("noi_dung")
+  ngayXayRa               String?                    @map("ngay_xay_ra")
+  noiXayRa                String?                    @map("noi_xay_ra")
+  ngayTiepNhan            String?                    @map("ngay_tiep_nhan")
+  donViTiepNhan           String?                    @map("don_vi_tiep_nhan")
+  ngayChuyenCoQuanDieuTra String?                    @map("ngay_chuyen_co_quan_dieu_tra")
+  donViThuLyChinh         String?                    @map("don_vi_thu_ly_chinh")
+  canhBaoTienDo           String?                    @map("canh_bao_tien_do")
+  trangThai               String?                    @map("trang_thai")
+  hinhThucGiaiQuyet       String?                    @map("hinh_thuc_giai_quyet")
+  donViQuanLy             String?                    @map("don_vi_quan_ly")
+  donViNhanHoSo           String?                    @map("don_vi_nhan_ho_so")
+  soLuuTru                String?                    @map("so_luu_tru")
+  ghiChu                  String?                    @map("ghi_chu")
+  bienPhapNganChan        BienPhapNganChan[]
+  hanhViToiDanh           HanhViToiDanh[]
+  nguoiThamGiaToTung      NguoiThamGiaToTung[]
+  quaTrinhDieuTra         QuaTrinhDieuTra[]
+  thongTinCongVan         ThongTinCongVan[]
+  thongTinPhanCong        ThongTinPhanCong[]
+
+  thongTinThietHai        ThongTinThietHai[]
+  thongTinTienAn          ThongTinTienAnTienSu[]
+  thongTinTruyNa          ThongTinTruyNa[]
+  thongTinVatChung        ThongTinVatChung[]
+
   @@map("data_don_an")
 }
 
 model BienPhapNganChan {
-  id                String    @id @map("id_bien_phap_ngan_chan")
-  dataDonAnId       String?   @map("id_data_don_an")
-  idCongVan         String?   @map("id_cong_van")
-  idNguoiThamGia    String?   @map("id_nguoi_tham_gia_to_tung")
-  bienPhapNganChan  String?   @map("bien_phap_ngan_chan")
-  lanThu            String?   @map("lan_thu")
-  thoiHan           String?   @map("thoi_han")
-  tuGio             String?   @map("tu_gio")
-  tuNgay            String?   @map("tu_ngay")
-  denGio            String?   @map("den_gio")
-  denNgay           String?   @map("den_ngay")
-  donViThucHien     String?   @map("don_vi_thuc_hien")
-  canhBaoTienDo     String?   @map("canh_bao_tien_do")
-  
-  dataDonAn         DataDonAn? @relation(fields: [dataDonAnId], references: [id])
+  id               String     @id @map("id_bien_phap_ngan_chan")
+  dataDonAnId      String?    @map("id_data_don_an")
+  idCongVan        String?    @map("id_cong_van")
+  idNguoiThamGia   String?    @map("id_nguoi_tham_gia_to_tung")
+  bienPhapNganChan String?    @map("bien_phap_ngan_chan")
+  lanThu           String?    @map("lan_thu")
+  thoiHan          String?    @map("thoi_han")
+  tuGio            String?    @map("tu_gio")
+  tuNgay           String?    @map("tu_ngay")
+  denGio           String?    @map("den_gio")
+  denNgay          String?    @map("den_ngay")
+  donViThucHien    String?    @map("don_vi_thuc_hien")
+  canhBaoTienDo    String?    @map("canh_bao_tien_do")
+  dataDonAn        DataDonAn? @relation(fields: [dataDonAnId], references: [id])
+
   @@map("bien_phap_ngan_chan")
 }
 
 model BoLuat {
-  idBoLuat          String    @id @map("id_bo_luat")
-  idCha             String?   @map("id_cha")
-  soDieu            String?   @map("so_dieu")
-  tenDieu           String?   @map("ten_dieu")
-  noiDung           String?   @map("noi_dung")
-  khoan             String?   @map("khoan")
-  diem              String?   @map("diem")
-  chuong            String?   @map("chuong")
-  muc               String?   @map("muc")
-  level             String?   @map("level")
-  sapXep            String?   @map("sap_xep")
-  
+  idBoLuat                String  @id @map("id_bo_luat")
+  noiDung                 String? @map("noi_dung")
+  khoan                   String? @map("khoan")
+  dieu                    String? @map("dieu")
+  giaHanDieuTra1          String? @map("gia_han_dieu_tra_1")
+  giaHanDieuTra2          String? @map("gia_han_dieu_tra_2")
+  giaHanDieuTra3          String? @map("gia_han_dieu_tra_3")
+  giaHanTamGiam1          String? @map("gia_han_tam_giam_1")
+  giaHanTamGiam2          String? @map("gia_han_tam_giam_2")
+  giaHanTamGiam3          String? @map("gia_han_tam_giam_3")
+  giaHanTamGiam4          String? @map("gia_han_tam_giam_4")
+  mucHinhPhat             String? @map("muc_hinh_phat")
+  mucHinhPhatCaoNhat      String? @map("muc_hinh_phat_cao_nhat")
+  nhanDieuLuat            String? @map("nhan_dieu_luat")
+  phanLoaiToiPham         String? @map("phan_loai_toi_pham")
+  thoiHanDieuTra          String? @map("thoi_han_dieu_tra")
+  thoiHanDieuTraBoSungTa  String? @map("thoi_han_dieu_tra_bo_sung_ta")
+  thoiHanDieuTraBoSungVks String? @map("thoi_han_dieu_tra_bo_sung_vks")
+  thoiHanTamGiam          String? @map("thoi_han_tam_giam")
+  thoiHieu                String? @map("thoi_hieu")
+  toiDanh                 String? @map("toi_danh")
+
   @@map("bo_luat")
 }
 
 model HanhViToiDanh {
-  idHanhVi          String    @id @map("id_hanh_vi")
-  dataDonAnId       String?   @map("id_data_don_an")
-  idNguoiThamGia    String?   @map("id_nguoi_tham_gia_to_tung")
-  idBoLuat          String?   @map("id_bo_luat")
-  tenHanhVi         String?   @map("ten_hanh_vi")
-  
-  dataDonAn         DataDonAn? @relation(fields: [dataDonAnId], references: [id])
+  idHanhVi       String     @id @map("id_hanh_vi")
+  dataDonAnId    String?    @map("id_data_don_an")
+  idNguoiThamGia String?    @map("id_nguoi_tham_gia_to_tung")
+  idBoLuat       String?    @map("id_bo_luat")
+  tenHanhVi      String?    @map("ten_hanh_vi")
+  dataDonAn      DataDonAn? @relation(fields: [dataDonAnId], references: [id])
+
   @@map("hanh_vi_toi_danh")
 }
 
 model NguoiThamGiaToTung {
-  idNguoiThamGia    String    @id @map("id_nguoi_tham_gia_to_tung")
-  dataDonAnId       String?   @map("id_data_don_an")
-  idCongDan         String?   @map("id_cong_dan")
-  tuCachToTung      String?   @map("tu_cach_to_tung")
-  tinhTrang         String?   @map("tinh_trang")
-  ghiChu            String?   @map("ghi_chu")
+  idNguoiThamGia String     @id @map("id_nguoi_tham_gia_to_tung")
+  dataDonAnId    String?    @map("id_data_don_an")
+  idCongDan      String?    @map("id_cong_dan")
+  tuCachToTung   String?    @map("tu_cach_to_tung")
+  tinhTrang      String?    @map("tinh_trang")
+  ghiChu         String?    @map("ghi_chu")
+  dataDonAn      DataDonAn? @relation(fields: [dataDonAnId], references: [id])
 
-  dataDonAn         DataDonAn? @relation(fields: [dataDonAnId], references: [id])
   @@map("nguoi_tham_gia_to_tung")
 }
 
 model QuaTrinhDieuTra {
-  idLog             String    @id @map("id_log")
-  dataDonAnId       String?   @map("id_don_an") // Mapped to id_don_an
-  idCongVan         String?   @map("id_cong_van")
-  ngayDoiTrangThai  String?   @map("ngay_doi_trang_thai")
-  trangThai         String?   @map("trang_thai")
-  history           String?   @map("history")
-  
-  dataDonAn         DataDonAn? @relation(fields: [dataDonAnId], references: [id])
+  history          String?    @map("history")
+  idCongVan        String?    @map("id_cong_van")
+  dataDonAnId      String?    @map("id_don_an")
+  idLog            String     @id @map("id_log")
+  ngayDoiTrangThai String?    @map("ngay_doi_trang_thai")
+  trangThai        String?    @map("trang_thai")
+  dataDonAn        DataDonAn? @relation(fields: [dataDonAnId], references: [id])
+
   @@map("qua_trinh_dieu_tra")
 }
 
 model ThongTinCongVan {
-  idVanBan          String    @id @map("id_van_ban")
-  dataDonAnId       String?   @map("id_ref") // Mapped to id_ref
-  tenVanBan         String?   @map("ten_van_ban")
-  soVanBan          String?   @map("so_van_ban")
-  ngayBanHanh       String?   @map("ngay_ban_hanh")
-  coQuanBanHanh     String?   @map("co_quan_ban_hanh")
-  fileVanBan        String?   @map("file_van_ban")
-  
-  dataDonAn         DataDonAn? @relation(fields: [dataDonAnId], references: [id])
+  idVanBan      String     @id @map("id_van_ban")
+  dataDonAnId   String?    @map("id_ref")
+  tenVanBan     String?    @map("ten_van_ban")
+  soVanBan      String?    @map("so_van_ban")
+  ngayBanHanh   String?    @map("ngay_ban_hanh")
+  coQuanBanHanh String?    @map("co_quan_ban_hanh")
+  fileVanBan    String?    @map("file_van_ban")
+  dataDonAn     DataDonAn? @relation(fields: [dataDonAnId], references: [id])
+
   @@map("thong_tin_cong_van")
 }
 
 model ThongTinPhanCong {
-  idPhanCong                 String    @id @map("id_phan_cong")
-  dataDonAnId                String?   @map("id_don_an") // Mapped to id_don_an
-  idCongVan                  String?   @map("id_cong_van")
-  phanLoai                   String?   @map("phan_loai")
-  donViThuLy                 String?   @map("don_vi_thu_ly")
-  phoThuTruong               String?   @map("pho_thu_truong")
-  dieuTraVien                String?   @map("dieu_tra_vien")
-  dieuTraVienThuLyChinh      String?   @map("dieu_tra_vien_thu_ly_chinh")
-  dieuTraVienCongAnCapXa     String?   @map("dieu_tra_vien_cong_an_cap_xa")
-  canBoDieuTra               String?   @map("can_bo_dieu_tra")
+  idPhanCong             String     @id @map("id_phan_cong")
+  canBoDieuTra           String?    @map("can_bo_dieu_tra")
+  dieuTraVien            String?    @map("dieu_tra_vien")
+  dieuTraVienCongAnCapXa String?    @map("dieu_tra_vien_cong_an_cap_xa")
+  dieuTraVienThuLyChinh  String?    @map("dieu_tra_vien_thu_ly_chinh")
+  donViThuLy             String?    @map("don_vi_thu_ly")
+  idCongVan              String?    @map("id_cong_van")
+  dataDonAnId            String?    @map("id_don_an")
+  phanLoai               String?    @map("phan_loai")
+  phoThuTruong           String?    @map("pho_thu_truong")
+  dataDonAn              DataDonAn? @relation(fields: [dataDonAnId], references: [id])
 
-  dataDonAn         DataDonAn? @relation(fields: [dataDonAnId], references: [id])
   @@map("thong_tin_phan_cong")
 }
 
 model ThongTinPhuongTien {
-  idPhuongTien      String    @id @map("id_phuong_tien")
-  idCongDan         String?   @map("id_cong_dan")
-  loaiPhuongTien    String?   @map("loai_phuong_tien")
-  bienSo            String?   @map("bien_so")
-  mauSon            String?   @map("mau_son")
-  soKhung           String?   @map("so_khung")
-  soMay             String?   @map("so_may")
-  namSanXuat        String?   @map("nam_san_xuat")
-  ghiChu            String?   @map("ghi_chu")
+  idPhuongTien   String  @id @map("id_phuong_tien")
+  idCongDan      String? @map("id_cong_dan")
+  loaiPhuongTien String? @map("loai_phuong_tien")
+  soKhung        String? @map("so_khung")
+  soMay          String? @map("so_may")
+  mauSon         String? @map("mau_son")
+  namSanXuat     String? @map("nam_san_xuat")
+  ghiChu         String? @map("ghi_chu")
+  bienSo         String? @map("bien_so")
 
-  // No FK to DataDonAn in CSV
   @@map("thong_tin_phuong_tien")
 }
 
 model ThongTinTaiKhoan {
-  idTaiKhoan        String    @id @map("id_tai_khoan")
-  idCongDan         String?   @map("id_cong_dan")
-  loaiTaiKhoan      String?   @map("loai_tai_khoan")
-  soTaiKhoan        String?   @map("so_tai_khoan")
-  nganHang          String?   @map("ngan_hang")
-  ngayMo            String?   @map("ngay_mo")
-  trangThai         String?   @map("trang_thai")
-  ghiChu            String?   @map("ghi_chu")
+  idTaiKhoan   String  @id @map("id_tai_khoan")
+  idCongDan    String? @map("id_cong_dan")
+  soTaiKhoan   String? @map("so_tai_khoan")
+  nganHang     String? @map("ngan_hang")
+  trangThai    String? @map("trang_thai")
+  ghiChu       String? @map("ghi_chu")
+  loaiTaiKhoan String? @map("loai_tai_khoan")
+  ngayMo       String? @map("ngay_mo")
 
-  // No FK to DataDonAn in CSV
   @@map("thong_tin_tai_khoan")
 }
 
-model ThongTinThanhVienTrongHo {
-  idThanhVien       String    @id @map("id_thanh_vien")
-  idCongDan         String?   @map("id_cong_dan") 
-  hoTen             String?   @map("ho_ten")
-  gioiTinh          String?   @map("gioi_tinh")
-  ngaySinh          String?   @map("ngay_sinh")
-  quanHeChuHo       String?   @map("quan_he_chu_ho")
-  quanHeCongDan     String?   @map("quan_he_cong_dan")
-  soCmndCccd        String?   @map("so_cmnd_cccd")
-  ngheNghiep        String?   @map("nghe_nghiep")
-  ghiChu            String?   @map("ghi_chu")
-  
-  // NOTE: Schema relation to DataDonAn is tentative. CSV lacks ID. 
-  // User asked for relations if applicable. Here it seems effectively unrelated in CSV structure.
-  // I will add an optional field just in case user meant it should link, but map it to 'id_data_don_an' 
-  // which doesn't exist in CSV, implying it won't be filled by seed, which is fine.
-  dataDonAnId       String?   @map("id_data_don_an")
-  dataDonAn         DataDonAn? @relation(fields: [dataDonAnId], references: [id])
 
-  @@map("thong_tin_thanh_vien_trong_ho")
-}
 
 model ThongTinThietHai {
-  idThietHai        String    @id @map("id_thiet_hai")
-  dataDonAnId       String?   @map("id_don_an") // Mapped to id_don_an
-  idCongDan         String?   @map("id_cong_dan")
-  loaiThietHai      String?   @map("loai_thiet_hai")
-  moTa              String?   @map("mo_ta")
-  giaTriUocTinh     String?   @map("gia_tri_uoc_tinh")
-  donViTinh         String?   @map("don_vi_tinh")
-  
-  dataDonAn         DataDonAn? @relation(fields: [dataDonAnId], references: [id])
+  idThietHai    String     @id @map("id_thiet_hai")
+  loaiThietHai  String?    @map("loai_thiet_hai")
+  moTa          String?    @map("mo_ta")
+  donViTinh     String?    @map("don_vi_tinh")
+  giaTriUocTinh String?    @map("gia_tri_uoc_tinh")
+  idCongDan     String?    @map("id_cong_dan")
+  dataDonAnId   String?    @map("id_don_an")
+  dataDonAn     DataDonAn? @relation(fields: [dataDonAnId], references: [id])
+
   @@map("thong_tin_thiet_hai")
 }
 
 model ThongTinTienAnTienSu {
-  idTienAn          String    @id @map("id_tien_an") // Header says id_tien_an
-  idCongDan         String?   @map("id_cong_dan")
-  idCongVan         String?   @map("id_cong_van")
-  phanLoai          String?   @map("phan_loai")
-  toiDanh           String?   @map("toi_danh")
-  ngayKetAn         String?   @map("ngay_ket_an")
-  thoiHan           String?   @map("thoi_han")
-  hinhPhat          String?   @map("hinh_phat")
-  ngayRaTu          String?   @map("ngay_ra_tu")
-  ghiChu            String?   @map("ghi_chu")
+  dataDonAnId String?    @map("id_data_don_an")
+  idCongDan   String?    @map("id_cong_dan")
+  toiDanh     String?    @map("toi_danh")
+  hinhPhat    String?    @map("hinh_phat")
+  ghiChu      String?    @map("ghi_chu")
+  idCongVan   String?    @map("id_cong_van")
+  idTienAn    String     @id @map("id_tien_an")
+  ngayKetAn   String?    @map("ngay_ket_an")
+  ngayRaTu    String?    @map("ngay_ra_tu")
+  phanLoai    String?    @map("phan_loai")
+  thoiHan     String?    @map("thoi_han")
+  dataDonAn   DataDonAn? @relation(fields: [dataDonAnId], references: [id])
 
-  // No FK to DataDonAn in CSV. 
-  // But I will keep optional relation if needed later? 
-  // CSV header: id_tien_an,id_cong_dan,id_cong_van... No id_don_an.
-  dataDonAnId       String?   @map("id_data_don_an")
-  dataDonAn         DataDonAn? @relation(fields: [dataDonAnId], references: [id])
-  
   @@map("thong_tin_tien_an_tien_su")
 }
 
 model ThongTinTruyNa {
-  idTruyNa          String    @id @map("id_truy_na")
-  idCongDan         String?   @map("id_cong_dan")
-  idCongVan         String?   @map("id_cong_van")
-  soLenhTruyNa      String?   @map("so_lenh_truy_na")
-  toiDanh           String?   @map("toi_danh")
-  ngayBanHanh       String?   @map("ngay_ban_hanh")
-  capBanHanh        String?   @map("cap_ban_hanh")
-  trangThai         String?   @map("trang_thai")
-  ghiChu            String?   @map("ghi_chu")
-
-  // No FK to DataDonAn in CSV.
-  dataDonAnId       String?   @map("id_data_don_an")
-  dataDonAn         DataDonAn? @relation(fields: [dataDonAnId], references: [id])
+  idTruyNa     String     @id @map("id_truy_na")
+  dataDonAnId  String?    @map("id_data_don_an")
+  idCongDan    String?    @map("id_cong_dan")
+  toiDanh      String?    @map("toi_danh")
+  trangThai    String?    @map("trang_thai")
+  ghiChu       String?    @map("ghi_chu")
+  capBanHanh   String?    @map("cap_ban_hanh")
+  idCongVan    String?    @map("id_cong_van")
+  ngayBanHanh  String?    @map("ngay_ban_hanh")
+  soLenhTruyNa String?    @map("so_lenh_truy_na")
+  dataDonAn    DataDonAn? @relation(fields: [dataDonAnId], references: [id])
 
   @@map("thong_tin_truy_na")
 }
 
 model ThongTinVatChung {
-  idVatChung        String    @id @map("id_vat_chung")
-  dataDonAnId       String?   @map("id_don_an") // Mapped to id_don_an
-  idCongDan         String?   @map("id_cong_dan")
-  loaiVatChung      String?   @map("loai_vat_chung")
-  moTa              String?   @map("mo_ta")
-  soLuong           String?   @map("so_luong")
-  donVi             String?   @map("don_vi")
-  trangThai         String?   @map("trang_thai")
-  ghiChu            String?   @map("ghi_chu")
-  
-  dataDonAn         DataDonAn? @relation(fields: [dataDonAnId], references: [id])
+  idVatChung   String     @id @map("id_vat_chung")
+  idCongDan    String?    @map("id_cong_dan")
+  loaiVatChung String?    @map("loai_vat_chung")
+  moTa         String?    @map("mo_ta")
+  soLuong      String?    @map("so_luong")
+  donVi        String?    @map("don_vi")
+  trangThai    String?    @map("trang_thai")
+  ghiChu       String?    @map("ghi_chu")
+  dataDonAnId  String?    @map("id_don_an")
+  dataDonAn    DataDonAn? @relation(fields: [dataDonAnId], references: [id])
+
   @@map("thong_tin_vat_chung")
 }
 
 model ThongTinChat {
-  id          String    @id @default(uuid()) @map("id")
-  thoiGian    String?   @map("thoi_gian")
-  noiDung     String?   @map("noi_dung")
-  nguoiGui    String?   @map("nguoi_gui")
-  nguoiNhan   String?   @map("nguoi_nhan")
-  nhom        String?   @map("nhom")
-  ghiChu      String?   @map("ghi_chu")
+  id        String  @id @default(uuid()) @map("id")
+  thoiGian  String? @map("thoi_gian")
+  noiDung   String? @map("noi_dung")
+  nguoiGui  String? @map("nguoi_gui")
+  nguoiNhan String? @map("nguoi_nhan")
+  nhom      String? @map("nhom")
+  ghiChu    String? @map("ghi_chu")
 
   @@map("thong_tin_chat")
 }
-=======
->>>>>>> 5c9e8ae (Fix import path and update tasks)

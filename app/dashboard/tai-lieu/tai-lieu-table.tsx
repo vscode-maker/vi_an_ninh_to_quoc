@@ -2,17 +2,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, message, Popconfirm, Upload, Segmented, Card, Col, Row, Tooltip, Empty, Pagination } from 'antd';
-import {
-    PlusOutlined, DeleteOutlined, EditOutlined, SaveOutlined, UploadOutlined,
-    FileTextOutlined, AppstoreOutlined, BarsOutlined, FilePdfOutlined,
-    FileExcelOutlined, FileWordOutlined, FileImageOutlined
-} from '@ant-design/icons';
 import { createFile, updateFile, deleteFile } from '@/lib/file-actions';
 import { useDebounce } from 'use-debounce';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-
-const { Meta } = Card;
+import { Table } from '@/app/ui/components/table';
+import { Button } from '@/app/ui/components/button';
+import { Modal } from '@/app/ui/components/modal';
+import { Input } from '@/app/ui/components/input';
+import {
+    Plus, Trash2, Edit, Save, Upload,
+    FileText, File, List, Grid
+} from 'lucide-react';
 
 export default function TaiLieuTable({ initialData, total, currentPage, userPermissions = [], userRole }: any) {
     const { replace } = useRouter();
@@ -27,8 +27,7 @@ export default function TaiLieuTable({ initialData, total, currentPage, userPerm
     const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingRecord, setEditingRecord] = useState<any>(null);
-    const [form] = Form.useForm();
-    const [uploadFileList, setUploadFileList] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
 
     // Search state
     const [searchTerm, setSearchTerm] = useState(searchParams.get('query') || '');
@@ -60,132 +59,47 @@ export default function TaiLieuTable({ initialData, total, currentPage, userPerm
 
     const openModal = (record: any = null) => {
         setEditingRecord(record);
-        setUploadFileList([]);
         setIsModalOpen(true);
     };
 
-    useEffect(() => {
-        if (!isModalOpen) return;
-        if (editingRecord) {
-            form.setFieldsValue(editingRecord);
-        } else {
-            form.resetFields();
-        }
-    }, [isModalOpen, editingRecord, form]);
-
     const handleDelete = async (fileId: string) => {
+        if (!confirm('Bạn có chắc chắn muốn xóa?')) return;
         const res = await deleteFile(fileId);
         if (res.success) {
-            message.success('Xóa tài liệu thành công');
-            // Optimistic update for better UX? Or just reload/revalidate
-            // Reloading is safer for server-side pagination consistency
+            alert('Xóa tài liệu thành công');
             window.location.reload();
         } else {
-            message.error(res.message);
+            alert(res.message);
         }
     };
 
-    const handleOk = async () => {
-        try {
-            const values = await form.validateFields();
-            const formData = new FormData();
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setLoading(true);
+        const formData = new FormData(e.currentTarget);
 
-            if (uploadFileList.length > 0) {
-                formData.append('file', uploadFileList[0].originFileObj);
-            }
-
-            formData.append('fileName', values.fileName);
-            formData.append('note', values.note || '');
-            formData.append('fileLink', values.fileLink || '');
-
-            let res;
-            if (editingRecord) {
-                formData.append('fileId', editingRecord.fileId);
-                res = await updateFile(formData);
-            } else {
-                res = await createFile(formData);
-            }
-
-            if (res.success) {
-                message.success(res.message);
-                setIsModalOpen(false);
-                window.location.reload();
-            } else {
-                message.error(res.message);
-            }
-        } catch (error) {
-            console.error('Validate Failed:', error);
+        let res;
+        if (editingRecord) {
+            formData.append('fileId', editingRecord.fileId);
+            res = await updateFile(formData);
+        } else {
+            res = await createFile(formData);
         }
+
+        if (res.success) {
+            alert(res.message);
+            setIsModalOpen(false);
+            window.location.reload();
+        } else {
+            alert(res.message);
+        }
+        setLoading(false);
     };
 
     const getFileIcon = (fileType: string) => {
-        if (!fileType) return <FileTextOutlined style={{ fontSize: 48, color: '#8c8c8c' }} />;
-        const type = fileType.toLowerCase();
-        if (type.includes('pdf')) return <FilePdfOutlined style={{ fontSize: 48, color: '#ff4d4f' }} />;
-        if (type.includes('sheet') || type.includes('excel') || type.includes('xlsx') || type.includes('xls')) return <FileExcelOutlined style={{ fontSize: 48, color: '#52c41a' }} />;
-        if (type.includes('word') || type.includes('doc') || type.includes('docx')) return <FileWordOutlined style={{ fontSize: 48, color: '#1890ff' }} />;
-        if (type.includes('image') || type.includes('jpg') || type.includes('png') || type.includes('jpeg')) return <FileImageOutlined style={{ fontSize: 48, color: '#fa8c16' }} />;
-        return <FileTextOutlined style={{ fontSize: 48, color: '#8c8c8c' }} />;
+        // Keeping it simple with Lucide icons for now
+        return <FileText size={48} className="text-gray-400" />;
     };
-
-    const renderGridView = () => (
-        <>
-            <Row gutter={[16, 16]}>
-                {fileList.map(file => (
-                    <Col xs={24} sm={12} md={8} lg={6} xl={4} key={file.fileId}>
-                        <Card
-                            hoverable
-                            actions={[
-                                <EditOutlined key="edit" onClick={() => openModal(file)} />,
-                                <Popconfirm title="Bạn có chắc chắn muốn xóa?" onConfirm={() => handleDelete(file.fileId)}>
-                                    <DeleteOutlined key="delete" style={{ color: 'red' }} />
-                                </Popconfirm>,
-                                <a href={file.fileLink} target="_blank" rel="noopener noreferrer" key="download">
-                                    <UploadOutlined rotate={180} />
-                                </a>
-                            ]}
-                            cover={
-                                <div style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f5', paddingTop: 20 }}>
-                                    {getFileIcon(file.fileType || file.fileName)}
-                                </div>
-                            }
-                        >
-                            <Meta
-                                title={
-                                    <Tooltip title={file.fileName}>
-                                        <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                            {file.fileName || 'Chưa đặt tên'}
-                                        </div>
-                                    </Tooltip>
-                                }
-                                description={
-                                    <div style={{ fontSize: 12, color: '#8c8c8c' }}>
-                                        {file.note ? (file.note.length > 20 ? file.note.substring(0, 20) + '...' : file.note) : 'Không có ghi chú'}
-                                    </div>
-                                }
-                            />
-                        </Card>
-                    </Col>
-                ))}
-                {fileList.length === 0 && (
-                    <Col span={24}>
-                        <Empty description="Không tìm thấy tài liệu" />
-                    </Col>
-                )}
-            </Row>
-            {total > 0 && (
-                <div style={{ marginTop: 16, textAlign: 'right' }}>
-                    <Pagination
-                        current={currentPage}
-                        total={total}
-                        pageSize={20}
-                        onChange={handlePageChange}
-                        showTotal={(total) => `Tổng ${total} tài liệu`}
-                    />
-                </div>
-            )}
-        </>
-    );
 
     const columns = [
         {
@@ -193,9 +107,11 @@ export default function TaiLieuTable({ initialData, total, currentPage, userPerm
             dataIndex: 'fileName',
             key: 'fileName',
             render: (text: string, record: any) => (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <FileTextOutlined />
-                    <a href={record.fileLink} target="_blank" rel="noopener noreferrer">{text || 'Không tên'}</a>
+                <div className="flex items-center gap-2">
+                    <FileText size={16} className="text-gray-500" />
+                    <a href={record.fileLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                        {text || 'Không tên'}
+                    </a>
                 </div>
             )
         },
@@ -204,90 +120,226 @@ export default function TaiLieuTable({ initialData, total, currentPage, userPerm
         {
             title: 'Hành động',
             key: 'action',
+            width: '120px',
             render: (_: any, record: any) => (
                 <div className="flex gap-2">
-                    {canEdit && <Button icon={<EditOutlined />} onClick={() => openModal(record)} />}
+                    {canEdit && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            icon={<Edit size={16} />}
+                            onClick={() => openModal(record)}
+                        />
+                    )}
                     {canDelete && (
-                        <Popconfirm title="Xóa tài liệu?" onConfirm={() => handleDelete(record.fileId)}>
-                            <Button icon={<DeleteOutlined />} danger />
-                        </Popconfirm>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            icon={<Trash2 size={16} />}
+                            onClick={() => handleDelete(record.fileId)}
+                        />
                     )}
                 </div>
             ),
         },
     ];
 
+    const totalPages = Math.ceil(total / 20);
+
+    const renderGridView = () => (
+        <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                {fileList.map(file => (
+                    <div key={file.fileId} className="group relative bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
+                        <div className="h-32 bg-gray-50 flex items-center justify-center pt-4">
+                            {getFileIcon(file.fileType || file.fileName)}
+                        </div>
+                        <div className="p-4 flex-1">
+                            <h4 className="font-medium text-gray-900 truncate mb-1" title={file.fileName}>
+                                {file.fileName || 'Chưa đặt tên'}
+                            </h4>
+                            <p className="text-xs text-gray-500 line-clamp-2 h-8">
+                                {file.note || 'Không có ghi chú'}
+                            </p>
+                        </div>
+                        <div className="flex items-center justify-between px-2 py-2 border-t border-gray-100 bg-gray-50/50">
+                            <a
+                                href={file.fileLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded"
+                                title="Tải xuống"
+                            >
+                                <Upload size={16} className="rotate-180" />
+                            </a>
+                            <div className="flex gap-1">
+                                {canEdit && (
+                                    <button
+                                        onClick={() => openModal(file)}
+                                        className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded"
+                                    >
+                                        <Edit size={16} />
+                                    </button>
+                                )}
+                                {canDelete && (
+                                    <button
+                                        onClick={() => handleDelete(file.fileId)}
+                                        className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                ))}
+                {fileList.length === 0 && (
+                    <div className="col-span-full py-12 text-center text-gray-500">
+                        Không tìm thấy tài liệu
+                    </div>
+                )}
+            </div>
+            {total > 0 && (
+                <div className="flex justify-end mt-4">
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={currentPage <= 1}
+                            onClick={() => handlePageChange(Number(currentPage) - 1)}
+                        >
+                            Previous
+                        </Button>
+                        <span className="flex items-center px-2 text-sm text-gray-600">
+                            Page {currentPage} of {totalPages}
+                        </span>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={currentPage >= totalPages}
+                            onClick={() => handlePageChange(Number(currentPage) + 1)}
+                        >
+                            Next
+                        </Button>
+                    </div>
+                </div>
+            )}
+        </>
+    );
+
     return (
         <div>
-            <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                    <Input.Search
-                        placeholder="Tìm kiếm tài liệu..."
-                        style={{ width: 300 }}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        defaultValue={searchTerm}
-                    />
-                    <Segmented
-                        options={[
-                            { label: 'Lưới', value: 'grid', icon: <AppstoreOutlined /> },
-                            { label: 'Danh sách', value: 'list', icon: <BarsOutlined /> },
-                        ]}
-                        value={viewMode}
-                        onChange={(val: any) => setViewMode(val)}
-                    />
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
+                <div className="flex gap-2 w-full md:w-auto">
+                    <div className="relative flex-1 md:w-[300px]">
+                        <Input
+                            placeholder="Tìm kiếm tài liệu..."
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            defaultValue={searchTerm}
+                        />
+                    </div>
+                    <div className="flex bg-gray-100 p-1 rounded-lg">
+                        <button
+                            onClick={() => setViewMode('grid')}
+                            className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+                        >
+                            <Grid size={18} />
+                        </button>
+                        <button
+                            onClick={() => setViewMode('list')}
+                            className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+                        >
+                            <List size={18} />
+                        </button>
+                    </div>
                 </div>
                 {canCreate && (
-                    <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()}>
+                    <Button icon={<Plus size={16} />} onClick={() => openModal()}>
                         Thêm tài liệu mới
                     </Button>
                 )}
             </div>
 
             {viewMode === 'grid' ? renderGridView() : (
-                <Table
-                    dataSource={fileList}
-                    columns={columns}
-                    rowKey="fileId"
-                    pagination={{
-                        current: currentPage,
-                        total: total,
-                        pageSize: 20,
-                        onChange: handlePageChange,
-                        showTotal: (total) => `Tổng ${total} tài liệu`
-                    }}
-                />
+                <>
+                    <Table
+                        dataSource={fileList}
+                        columns={columns}
+                        rowKey="fileId"
+                    />
+                    {total > 0 && (
+                        <div className="flex justify-end mt-4">
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={currentPage <= 1}
+                                    onClick={() => handlePageChange(Number(currentPage) - 1)}
+                                >
+                                    Previous
+                                </Button>
+                                <span className="flex items-center px-2 text-sm text-gray-600">
+                                    Page {currentPage} of {totalPages}
+                                </span>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={currentPage >= totalPages}
+                                    onClick={() => handlePageChange(Number(currentPage) + 1)}
+                                >
+                                    Next
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </>
             )}
 
             <Modal
                 title={editingRecord ? "Cập nhật tài liệu" : "Thêm tài liệu mới"}
-                open={isModalOpen}
-                onOk={handleOk}
-                onCancel={() => setIsModalOpen(false)}
-                okText="Lưu"
-                cancelText="Hủy"
-                destroyOnHidden={true}
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
             >
-                <Form form={form} layout="vertical">
-                    <Form.Item name="fileName" label="Tên tài liệu" rules={[{ required: true, message: 'Vui lòng nhập tên tài liệu' }]}>
-                        <Input />
-                    </Form.Item>
-                    <Form.Item name="note" label="Ghi chú">
-                        <Input.TextArea />
-                    </Form.Item>
-                    <Form.Item name="fileLink" label="Link file (Nếu có sẵn)">
-                        <Input placeholder="https://..." />
-                    </Form.Item>
-                    <Form.Item label="Upload File (Sẽ tạo link Drive)">
-                        <Upload
-                            fileList={uploadFileList}
-                            beforeUpload={() => false}
-                            onChange={({ fileList }) => setUploadFileList(fileList)}
-                            maxCount={1}
-                        >
-                            <Button icon={<UploadOutlined />}>Chọn file</Button>
-                        </Upload>
-                    </Form.Item>
-                </Form>
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                    <Input
+                        name="fileName"
+                        label="Tên tài liệu"
+                        required
+                        defaultValue={editingRecord?.fileName}
+                    />
+
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-sm font-medium text-gray-700">Ghi chú</label>
+                        <textarea
+                            name="note"
+                            rows={3}
+                            className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-950"
+                            defaultValue={editingRecord?.note}
+                        />
+                    </div>
+
+                    <Input
+                        name="fileLink"
+                        label="Link file (Nếu có sẵn)"
+                        placeholder="https://..."
+                        defaultValue={editingRecord?.fileLink}
+                    />
+
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-sm font-medium text-gray-700">Upload File (Sẽ tạo link Drive)</label>
+                        <input
+                            type="file"
+                            name="file"
+                            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        />
+                    </div>
+
+                    <div className="flex justify-end gap-2 mt-4">
+                        <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Hủy</Button>
+                        <Button type="submit" loading={loading} icon={<Save size={16} />}>Lưu</Button>
+                    </div>
+                </form>
             </Modal>
         </div>
     );

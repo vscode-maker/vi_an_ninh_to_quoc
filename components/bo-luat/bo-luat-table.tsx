@@ -1,17 +1,8 @@
-
 'use client';
 
 import React from 'react';
-import { Table, Tag } from 'antd';
-
-interface DataType {
-    idBoLuat: string;
-    toiDanh: string;
-    dieu: string;
-    khoan: string;
-    noiDung: string;
-    mucHinhPhat: string;
-}
+import { Table } from '@/app/ui/components/table';
+import { Tag } from '@/app/ui/components/tag';
 
 interface Props {
     data: any[];
@@ -27,19 +18,19 @@ const BoLuatTable: React.FC<Props> = ({ data, total, page, pageSize }) => {
             title: 'Điều',
             dataIndex: 'dieu',
             key: 'dieu',
-            width: 80,
+            width: '80px',
         },
         {
             title: 'Khoản',
             dataIndex: 'khoan',
             key: 'khoan',
-            width: 80,
+            width: '80px',
         },
         {
             title: 'Tội danh',
             dataIndex: 'toiDanh',
             key: 'toiDanh',
-            width: 200,
+            width: '200px',
         },
         {
             title: 'Nội dung',
@@ -50,22 +41,24 @@ const BoLuatTable: React.FC<Props> = ({ data, total, page, pageSize }) => {
             title: 'Mức hình phạt',
             dataIndex: 'mucHinhPhat',
             key: 'mucHinhPhat',
-            width: 150,
+            width: '150px',
             render: (text: string) => <Tag>{text}</Tag>
         }
     ];
 
     return (
-        <Table
-            columns={columns}
-            dataSource={data}
-            rowKey="idBoLuat"
-            pagination={{
-                current: page,
-                pageSize: pageSize,
-                total: total,
-            }}
-        />
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <Table
+                columns={columns}
+                dataSource={data}
+                rowKey="idBoLuat"
+                pagination={{
+                    current: page,
+                    pageSize: pageSize,
+                    total: total,
+                }}
+            />
+        </div>
     );
 };
 

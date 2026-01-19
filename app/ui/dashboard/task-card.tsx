@@ -1,56 +1,53 @@
 'use client';
 
-import React from 'react';
-import { Card, Tag, Typography, Button, message, Tooltip, Space, Popover, Popconfirm } from 'antd';
+import React, { useState } from 'react';
 import {
-    UserOutlined,
-    EditOutlined,
-    DeleteOutlined,
-    SyncOutlined,
-    FileTextOutlined,
-    PaperClipOutlined,
-    BankOutlined,
-    PhoneOutlined,
-} from '@ant-design/icons';
+    User, Edit, Trash2, RefreshCw, FileText, Paperclip,
+    Landmark, Phone
+} from 'lucide-react';
 import type { Task } from '@prisma/client';
 import { updateTaskStatus } from '@/lib/task-actions';
 import dayjs from 'dayjs';
 
-const { Title, Text } = Typography;
+import { Card } from '@/app/ui/components/card';
+import { Tag } from '@/app/ui/components/tag';
+import { Button } from '@/app/ui/components/button';
+import { Tooltip } from '@/app/ui/components/tooltip';
+import { Dropdown, DropdownItem } from '@/app/ui/components/dropdown';
 
 // Constants - shared with main board
 export const COLUMN_STATUSES = {
     todo: {
         label: 'Chưa thực hiện',
         value: 'Chưa thực hiện',
-        color: '#fff0f6',
-        headerColor: 'linear-gradient(90deg, #ff4d4f 0%, #fff0f6 100%)', // Red gradient
-        iconColor: '#eb2f96'
+        color: 'bg-red-50 text-red-600',
+        headerColor: 'border-red-200',
+        iconColor: 'text-red-500'
     },
     pending: {
         label: 'Chờ kết quả',
         value: 'Chờ kết quả',
-        color: '#fff7e6',
-        headerColor: 'linear-gradient(90deg, #fa8c16 0%, #fff7e6 100%)', // Orange gradient
-        iconColor: '#fa8c16'
+        color: 'bg-orange-50 text-orange-600',
+        headerColor: 'border-orange-200',
+        iconColor: 'text-orange-500'
     },
     done: {
         label: 'Hoàn thành',
         value: 'Hoàn thành',
-        color: '#f6ffed',
-        headerColor: 'linear-gradient(90deg, #52c41a 0%, #f6ffed 100%)', // Green gradient
-        iconColor: '#52c41a'
+        color: 'bg-green-50 text-green-600',
+        headerColor: 'border-green-200',
+        iconColor: 'text-green-500'
     },
 };
 
 // Utility functions
-export function getRequestTypeColor(type: string | null) {
+export function getRequestTypeColor(type: string | null): 'blue' | 'green' | 'red' | 'yellow' | 'gray' | 'purple' | 'cyan' | 'magenta' | 'gold' {
     const t = type?.toLowerCase() || '';
     if (t.includes('ngân hàng') || t.includes('sao kê')) return 'magenta';
     if (t.includes('điện thoại')) return 'purple';
     if (t.includes('zalo')) return 'cyan';
-    if (t.includes('văn bản') || t.includes('công văn')) return 'geekblue';
-    return 'default';
+    if (t.includes('văn bản') || t.includes('công văn')) return 'blue';
+    return 'gray';
 }
 
 export interface TaskCardProps {
@@ -66,236 +63,206 @@ export interface TaskCardProps {
 
 const TaskCard = React.memo(function TaskCard({ task, onAction, onView, onUpload, onAddNote, onTaskUpdate, onDelete, isHighlighted }: TaskCardProps) {
     const isOverdue = task.deadline && dayjs(task.deadline).isBefore(dayjs());
-
     const isUrgent = task.progressWarning === 'Khẩn cấp';
-    const [isHovered, setIsHovered] = React.useState(false);
+    const [isHovered, setIsHovered] = useState(false);
 
-    const handleStatusChange = async (e: React.MouseEvent, newItem: any) => {
-        e.stopPropagation();
+    const handleStatusChange = async (newItem: { label: string; value: string }) => {
         if (newItem.value === task.status) return;
 
         const oldStatus = task.status;
         const updatedTask = { ...task, status: newItem.value };
         onTaskUpdate(updatedTask);
-        message.success(`Đã cập nhật trạng thái: ${newItem.label}`);
+        // alert(`Đã cập nhật trạng thái: ${newItem.label}`); // Removed purely visual alert
 
         try {
             const result = await updateTaskStatus(task.id, newItem.value);
             if (!result.success) {
                 onTaskUpdate({ ...task, status: oldStatus });
-                message.error('Cập nhật thất bại');
+                alert('Cập nhật thất bại');
             }
         } catch (err) {
             onTaskUpdate({ ...task, status: oldStatus });
-            message.error('Lỗi kết nối');
+            alert('Lỗi kết nối');
         }
     };
 
-    const cardStyle: React.CSSProperties = {
-        borderRadius: 12,
-        boxShadow: isHighlighted ? '0 0 10px 2px #52c41a' : (isHovered ? '0 4px 12px rgba(0,0,0,0.15)' : '0 4px 12px rgba(0,0,0,0.1)'),
-        border: isHighlighted ? '1px solid #52c41a' : (isHovered ? '1px solid #40a9ff' : '1px solid #e8e8e8'),
-        overflow: 'hidden',
-        marginBottom: 12,
-        transition: 'all 0.3s ease',
+    const handleDelete = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (window.confirm('Bạn có chắc muốn xóa công việc này?')) {
+            onDelete(task);
+        }
     };
 
     return (
-        <Card
-            size="small"
-            hoverable
-            onClick={undefined} // Removed global click
-            style={cardStyle}
-            styles={{ body: { padding: '12px 16px' } }}
+        <div
+            className={`
+                bg-white rounded-xl shadow-sm border overflow-hidden mb-3 transition-all duration-300
+                ${isHighlighted ? 'border-green-500 shadow-[0_0_10px_2px_rgba(34,197,94,0.3)]' : isHovered ? 'border-blue-400 shadow-md' : 'border-gray-200'}
+            `}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
         >
-            {/* Header Tags */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <Tag color={getRequestTypeColor(task.requestType)} style={{ borderRadius: 12, padding: '0 10px', fontWeight: 500, border: 'none' }}>
-                    {task.requestType}
-                </Tag>
-                {task.deadline ? (
-                    <Tag color={isOverdue ? 'red' : isUrgent ? 'gold' : 'geekblue'} style={{ borderRadius: 12, marginRight: 0 }}>
-                        {isOverdue ? 'Quá hạn' : dayjs(task.deadline).format('DD/MM/YYYY')}
+            <div className="p-3">
+                {/* Header Tags */}
+                <div className="flex justify-between items-center mb-2">
+                    <Tag color={getRequestTypeColor(task.requestType)}>
+                        {task.requestType}
                     </Tag>
-                ) : (
-                    <Tag style={{ borderRadius: 12, marginRight: 0 }}>Chưa định thời hạn</Tag>
-                )}
-            </div>
+                    {task.deadline ? (
+                        <Tag color={isOverdue ? 'red' : isUrgent ? 'gold' : 'blue'}>
+                            {isOverdue ? 'Quá hạn' : dayjs(task.deadline).format('DD/MM/YYYY')}
+                        </Tag>
+                    ) : (
+                        <Tag color="gray">Chưa hạn</Tag>
+                    )}
+                </div>
 
-            {/* Main Content - Click Scope Restricted Here */}
-            <div
-                onClick={onView}
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
-                style={{
-                    marginBottom: 12,
-                    cursor: 'pointer', // Only this area is interactive for details
-                    transition: 'all 0.3s ease'
-                }}
-            >
-                <Title
-                    level={5}
-                    style={{
-                        margin: '0 0 4px',
-                        fontSize: 16,
-                        color: isHovered ? '#1890ff' : 'inherit',
-                        transition: 'color 0.3s ease'
-                    }}
+                {/* Main Content */}
+                <div
+                    onClick={onView}
+                    className="mb-3 cursor-pointer group"
                 >
-                    {task.targetName || 'Không tên'}
-                </Title>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#8c8c8c', fontSize: 13 }}>
-                    <UserOutlined />
-                    <Text type="secondary" style={{ marginRight: 8 }}>{task.requesterName}</Text>
+                    <h3 className={`text-base font-semibold mb-1 transition-colors ${isHovered ? 'text-blue-600' : 'text-gray-900'}`}>
+                        {task.targetName || 'Không tên'}
+                    </h3>
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <User size={14} />
+                        <span className="truncate">{task.requesterName}</span>
 
-                    {task.executionUnit && (
-                        <>
-                            <div style={{ width: 1, height: 12, background: '#d9d9d9' }} /> {/* Separator */}
-                            <BankOutlined style={{ color: '#13c2c2' }} /> {/* Or TeamOutlined */}
-                            <Text type="secondary" style={{ color: '#13c2c2' }}>{task.executionUnit}</Text>
-                        </>
-                    )}
+                        {task.executionUnit && (
+                            <>
+                                <span className="w-px h-3 bg-gray-300"></span>
+                                <Landmark size={14} className="text-teal-500" />
+                                <span className="text-teal-600 truncate">{task.executionUnit}</span>
+                            </>
+                        )}
+                    </div>
                 </div>
-            </div>
 
-            {/* ... (rest of render until Action Bar) ... */}
+                {/* Context Info */}
+                {(task.phoneNumber || task.bankName) && (
+                    <div className="bg-gray-50 p-2 rounded-lg mb-3 text-xs">
+                        {task.phoneNumber && (
+                            <div className="flex items-center gap-2 mb-1 last:mb-0">
+                                <Phone size={14} className="text-green-500" />
+                                <span className="font-semibold text-gray-700">{task.phoneNumber}</span>
+                                <span className="text-gray-500">({task.carrier})</span>
+                            </div>
+                        )}
+                        {task.bankName && (
+                            <div className="flex items-center gap-2">
+                                <Landmark size={14} className="text-blue-500" />
+                                <span className="font-semibold text-gray-700">{task.accountNumber}</span>
+                                <span className="text-gray-500">- {task.bankName}</span>
+                            </div>
+                        )}
+                    </div>
+                )}
 
-            {/* Context Info */}
-            {(task.phoneNumber || task.bankName) && (
-                <div style={{ background: '#f9f9f9', padding: '8px 12px', borderRadius: 8, marginBottom: 12, fontSize: 13 }}>
-                    {task.phoneNumber && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <PhoneOutlined style={{ color: '#52c41a' }} />
-                            <Text strong>{task.phoneNumber}</Text>
-                            <Text type="secondary">({task.carrier})</Text>
-                        </div>
-                    )}
-                    {task.bankName && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <BankOutlined style={{ color: '#1890ff' }} />
-                            <Text strong>{task.accountNumber}</Text>
-                            <Text type="secondary">- {task.bankName}</Text>
-                        </div>
-                    )}
-                </div>
-            )}
+                {/* Content Preview */}
+                {task.content && (
+                    <div className="text-xs text-gray-500 mb-3 italic">
+                        "{task.content.length > 80 ? task.content.substring(0, 80) + '...' : task.content}"
+                    </div>
+                )}
 
-            {/* Content Preview */}
-            {task.content && (
-                <div style={{ fontSize: 13, color: '#595959', marginBottom: 12, fontStyle: 'italic' }}>
-                    "{task.content.length > 80 ? task.content.substring(0, 80) + '...' : task.content}"
-                </div>
-            )}
+                {/* Notes Preview (Latest) */}
+                {(() => {
+                    if (!task.notes) return null;
+                    let latestNote = null;
+                    try {
+                        const notes = Array.isArray(task.notes) ? task.notes : JSON.parse(task.notes as string);
+                        if (Array.isArray(notes) && notes.length > 0) {
+                            latestNote = notes[notes.length - 1];
+                        }
+                    } catch (e) { return null; }
 
-            {/* Notes Preview (Latest) */}
-            {(() => {
-                if (!task.notes) return null;
-                let latestNote = null;
-                try {
-                    const notes = Array.isArray(task.notes) ? task.notes : JSON.parse(task.notes as string);
-                    if (Array.isArray(notes) && notes.length > 0) {
-                        // Get last note (assuming chronological push) or first if sorted Newest First
-                        // Logic in NoteModal was push to end, so last item is newest.
-                        latestNote = notes[notes.length - 1];
+                    if (latestNote && (latestNote.content || latestNote.noi_dung)) {
+                        const content = latestNote.content || latestNote.noi_dung;
+                        return (
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-2 mb-3 text-xs">
+                                <div className="flex items-center gap-1.5 mb-1 text-green-700 font-semibold">
+                                    <FileText size={12} />
+                                    <span>Ghi chú mới nhất:</span>
+                                </div>
+                                <div className="text-green-600">
+                                    {content.length > 60 ? content.substring(0, 60) + '...' : content}
+                                </div>
+                            </div>
+                        );
                     }
-                } catch (e) { return null; }
+                    return null;
+                })()}
 
-                if (latestNote && (latestNote.content || latestNote.noi_dung)) {
-                    const content = latestNote.content || latestNote.noi_dung;
-                    return (
-                        <div style={{
-                            background: '#f6ffed',
-                            border: '1px solid #b7eb8f',
-                            borderRadius: '8px',
-                            padding: '8px 12px',
-                            marginBottom: 12,
-                            fontSize: '12px'
-                        }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, color: '#389e0d', fontWeight: 600 }}>
-                                <FileTextOutlined />
-                                Ghi chú mới nhất:
-                            </div>
-                            <div style={{ color: '#52c41a' }}>
-                                {content.length > 60 ? content.substring(0, 60) + '...' : content}
-                            </div>
-                        </div>
-                    );
-                }
-                return null;
-            })()}
+                {/* Action Bar */}
+                <div className="flex justify-between items-center pt-2 border-t border-gray-100 mt-2">
+                    <div className="flex items-center gap-1">
+                        <Tooltip content="Chỉnh sửa">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                onClick={onAction}
+                                icon={<Edit size={16} />}
+                            />
+                        </Tooltip>
+                        <Tooltip content="File đính kèm">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onUpload(task);
+                                }}
+                                icon={<Paperclip size={16} />}
+                            />
+                        </Tooltip>
 
-            {/* Action Bar */}
-            <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                borderTop: '1px solid #f0f0f0',
-                paddingTop: 8,
-                marginTop: 8
-            }}>
-                <Space size={4}>
-                    <Tooltip title="Chỉnh sửa">
-                        <Button type="text" size="small" icon={<EditOutlined style={{ color: '#52c41a' }} />} onClick={onAction} />
-                    </Tooltip>
-                    <Tooltip title="File đính kèm">
+                        <Dropdown
+                            trigger={
+                                <button className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-orange-50 text-orange-500 transition-colors">
+                                    <RefreshCw size={16} />
+                                </button>
+                            }
+                            menu={
+                                <div>
+                                    {Object.values(COLUMN_STATUSES).map((item) => (
+                                        <DropdownItem
+                                            key={item.value}
+                                            onClick={() => handleStatusChange(item)}
+                                            className={item.value === task.status ? 'bg-blue-50 text-blue-600' : ''}
+                                        >
+                                            {item.label}
+                                        </DropdownItem>
+                                    ))}
+                                </div>
+                            }
+                        />
+
+                        <Tooltip content="Ghi chú">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                                onClick={(e) => { e.stopPropagation(); onAddNote(task); }}
+                                icon={<FileText size={16} />}
+                            />
+                        </Tooltip>
+                    </div>
+
+                    <Tooltip content="Xóa">
                         <Button
-                            type="text"
-                            size="small"
-                            icon={<PaperClipOutlined style={{ color: '#1890ff' }} />}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onUpload(task);
-                            }}
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={handleDelete}
+                            icon={<Trash2 size={16} />}
                         />
                     </Tooltip>
-                    <Popover
-                        content={
-                            <div style={{ minWidth: 200 }}>
-                                {Object.values(COLUMN_STATUSES).map((item) => (
-                                    <div
-                                        key={item.value}
-                                        onClick={(e) => handleStatusChange(e, item)}
-                                        style={{
-                                            cursor: 'pointer',
-                                            background: item.value === task.status ? '#e6f7ff' : 'transparent',
-                                            padding: '8px 12px',
-                                            borderRadius: 4,
-                                            marginBottom: 4,
-                                            transition: 'background 0.3s'
-                                        }}
-                                    >
-                                        <Text style={{ color: item.iconColor }}>{item.label}</Text>
-                                    </div>
-                                ))}
-                            </div>
-                        }
-                        title="Chuyển trạng thái"
-                        trigger="click"
-                        placement="bottom"
-                    >
-                        <Tooltip title="Cập nhật trạng thái">
-                            <Button type="text" size="small" icon={<SyncOutlined style={{ color: '#fa8c16' }} />} onClick={(e) => e.stopPropagation()} />
-                        </Tooltip>
-                    </Popover>
-                    <Tooltip title="Ghi chú">
-                        <Button type="text" size="small" icon={<FileTextOutlined style={{ color: '#722ed1' }} />} onClick={(e) => { e.stopPropagation(); onAddNote(task); }} />
-                    </Tooltip>
-                </Space>
-                <div onClick={(e) => e.stopPropagation()}>
-                    <Popconfirm
-                        title="Xóa công việc"
-                        description="Bạn có chắc muốn xóa công việc này?"
-                        onConfirm={() => onDelete(task)}
-                        okText="Có"
-                        cancelText="Không"
-                        placement="topRight"
-                    >
-                        <Tooltip title="Xóa">
-                            <Button type="text" size="small" icon={<DeleteOutlined style={{ color: '#ff4d4f' }} />} />
-                        </Tooltip>
-                    </Popconfirm>
                 </div>
             </div>
-        </Card>
+        </div>
     );
 }, (prev, next) => {
     return prev.task === next.task &&

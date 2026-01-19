@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Input, Button, Typography, message } from 'antd';
-import { SendOutlined, UserOutlined, ClockCircleOutlined, CloseOutlined, FileTextOutlined, EditOutlined, DeleteOutlined, SaveOutlined } from '@ant-design/icons';
+import { Clock, X, Edit, Trash2, Save } from 'lucide-react';
 import dayjs from 'dayjs';
 import { addTaskNote, updateTaskNote, deleteTaskNote } from '@/lib/task-actions';
 import type { Task } from '@prisma/client';
 
-const { TextArea } = Input;
-const { Text } = Typography;
+import { Modal } from '@/app/ui/components/modal';
+import { Button } from '@/app/ui/components/button';
+import { TextArea } from '@/app/ui/components/textarea';
 
 interface NoteModalProps {
     visible: boolean;
@@ -17,7 +17,6 @@ interface NoteModalProps {
     onTaskUpdate: (task: Task) => void;
 }
 
-// Unified interface for display
 interface DisplayNote {
     id: string;
     content: string;
@@ -27,7 +26,6 @@ interface DisplayNote {
 }
 
 const NoteModal = ({ visible, onCancel, task, onTaskUpdate }: NoteModalProps) => {
-    const [messageApi, contextHolder] = message.useMessage();
     const [newNote, setNewNote] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [displayNotes, setDisplayNotes] = useState<DisplayNote[]>([]);
@@ -46,11 +44,9 @@ const NoteModal = ({ visible, onCancel, task, onTaskUpdate }: NoteModalProps) =>
 
         let parsedNotes: any[] = [];
         try {
-            // Check if it's already an array (Prisma Json type)
             if (Array.isArray(task.notes)) {
                 parsedNotes = task.notes as any[];
             } else if (typeof task.notes === 'string') {
-                // Legacy stringified JSON
                 const parsed = JSON.parse(task.notes);
                 if (Array.isArray(parsed)) {
                     parsedNotes = parsed;
@@ -62,18 +58,15 @@ const NoteModal = ({ visible, onCancel, task, onTaskUpdate }: NoteModalProps) =>
         }
 
         const formattedNotes: DisplayNote[] = parsedNotes.map((note: any, index: number) => {
-            // Detect format
             if (note.thoi_gian && note.noi_dung) {
-                // Legacy Format - Fixed: removed "Hệ thống cũ" label
                 return {
                     id: `legacy_${index}`,
                     content: note.noi_dung,
                     createdAt: note.thoi_gian,
-                    createdBy: '', // Removed hardcoded 'Hệ thống cũ'
+                    createdBy: '',
                     isLegacy: true
                 };
             } else {
-                // Modern Format
                 return {
                     id: note.id || `note_${index}`,
                     content: note.content,
@@ -89,7 +82,7 @@ const NoteModal = ({ visible, onCancel, task, onTaskUpdate }: NoteModalProps) =>
 
     const handleSave = async () => {
         if (!newNote.trim()) {
-            messageApi.warning('Vui lòng nhập nội dung ghi chú');
+            alert('Vui lòng nhập nội dung ghi chú');
             return;
         }
 
@@ -97,7 +90,6 @@ const NoteModal = ({ visible, onCancel, task, onTaskUpdate }: NoteModalProps) =>
         const currentContent = newNote;
 
         try {
-            // Optimistic update
             const optimisticNote = {
                 id: Math.random().toString(),
                 content: currentContent,
@@ -108,7 +100,6 @@ const NoteModal = ({ visible, onCancel, task, onTaskUpdate }: NoteModalProps) =>
             const currentNotesArray = Array.isArray(task.notes) ? (task.notes as any[]) : [];
             const updatedNotes = [...currentNotesArray, optimisticNote];
 
-            // Update parent state locally first
             onTaskUpdate({
                 ...task,
                 notes: updatedNotes as any
@@ -116,22 +107,18 @@ const NoteModal = ({ visible, onCancel, task, onTaskUpdate }: NoteModalProps) =>
 
             setNewNote('');
 
-            // Call server
             const result = await addTaskNote(task.id, currentContent);
-            if (result.success) {
-                messageApi.success('Đã lưu ghi chú');
-            } else {
-                messageApi.error(result.message);
+            if (!result.success) {
+                alert(result.message);
             }
         } catch (error) {
             console.error('Save note error:', error);
-            messageApi.error('Có lỗi xảy ra khi lưu ghi chú');
+            alert('Có lỗi xảy ra khi lưu ghi chú');
         } finally {
             setSubmitting(false);
         }
     };
 
-    // Edit Handlers
     const startEditing = (note: DisplayNote) => {
         setEditingNoteId(note.id);
         setEditingContent(note.content);
@@ -144,13 +131,9 @@ const NoteModal = ({ visible, onCancel, task, onTaskUpdate }: NoteModalProps) =>
 
     const saveEdit = async (noteId: string) => {
         if (!editingContent.trim()) {
-            messageApi.warning('Nội dung không được để trống');
+            alert('Nội dung không được để trống');
             return;
         }
-
-        // Optimistic Update Implementation could be complex here due to re-indexing risk if legacy,
-        // but for now let's just wait for server or do partial optimistic.
-        // Let's do partial optimistic for UI responsiveness.
 
         const oldNotes = displayNotes;
         const updatedDisplayNotes = displayNotes.map(n => n.id === noteId ? { ...n, content: editingContent } : n);
@@ -158,21 +141,9 @@ const NoteModal = ({ visible, onCancel, task, onTaskUpdate }: NoteModalProps) =>
         setEditingNoteId(null);
 
         const result = await updateTaskNote(task.id, noteId, editingContent);
-        if (result.success) {
-            messageApi.success('Đã cập nhật');
-            // Refreshing the whole task might be needed to get synced state, BUT
-            // onTaskUpdate isn't really a "fetch" it's a local state setter.
-            // Ideally we should re-fetch or construct the exact new array to pass to onTaskUpdate.
-            // For now, let the revalidatePath handle the eventual consistency on next page load/interaction,
-            // and rely on our local optimistic update for immediate feedback.
-
-            // We should actully update the Parent Task State so other components know.
-            // Re-construct the raw notes array for parent update
-            // This is tricky without knowing exact structure but we can try mapping back.
-            // Simpler to just trigger a router refresh or rely on message.
-        } else {
-            messageApi.error(result.message);
-            setDisplayNotes(oldNotes); // Rollback
+        if (!result.success) {
+            alert(result.message);
+            setDisplayNotes(oldNotes);
         }
     };
 
@@ -184,17 +155,12 @@ const NoteModal = ({ visible, onCancel, task, onTaskUpdate }: NoteModalProps) =>
         setDisplayNotes(updatedDisplayNotes);
 
         const result = await deleteTaskNote(task.id, noteId);
-        if (result.success) {
-            messageApi.success('Đã xóa ghi chú');
-            // Update Parent
-            // Similarly difficult to exact match raw structure without fetching.
-        } else {
-            messageApi.error(result.message);
+        if (!result.success) {
+            alert(result.message);
             setDisplayNotes(oldNotes);
         }
     };
 
-    // Helper to format date
     const formatDate = (dateStr: string, isLegacy?: boolean) => {
         if (!dateStr) return '';
         if (isLegacy) {
@@ -205,124 +171,73 @@ const NoteModal = ({ visible, onCancel, task, onTaskUpdate }: NoteModalProps) =>
 
     return (
         <Modal
-            open={visible}
-            onCancel={onCancel}
-            footer={null}
-            title={null} // Custom title
-            closable={false} // Custom close button
-            width={600}
-            styles={{
-                body: { padding: 0 }
-            }}
-        >
-            {contextHolder}
-
-            {/* Custom Header */}
-            <div style={{
-                background: '#fff',
-                borderBottom: '1px solid #f0f0f0',
-                padding: '16px 24px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{
-                        background: '#52c41a',
-                        borderRadius: '4px',
-                        padding: '4px 8px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}>
-                        <FileTextOutlined style={{ color: '#fff', fontSize: '18px' }} />
-                    </div>
-                    <Text strong style={{ fontSize: '18px', color: '#52c41a' }}>Ghi Chú</Text>
+            isOpen={visible}
+            onClose={onCancel}
+            title="Ghi Chú"
+            width="600px"
+            footer={
+                <div className="flex justify-end gap-2">
+                    <Button variant="ghost" onClick={onCancel}>Hủy</Button>
+                    <Button
+                        variant="primary"
+                        onClick={handleSave}
+                        loading={submitting}
+                        icon={<Save size={16} />}
+                    >
+                        Lưu Ghi Chú
+                    </Button>
                 </div>
-                <Button
-                    type="text"
-                    shape="circle"
-                    icon={<CloseOutlined style={{ fontSize: '16px', color: '#999' }} />}
-                    onClick={onCancel}
-                    style={{ background: '#f5f5f5' }}
-                />
-            </div>
-
-            <div style={{ padding: '24px' }}>
+            }
+        >
+            <div className="space-y-6">
                 {/* Input Section */}
-                <div style={{ marginBottom: '24px' }}>
-                    <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <EditOutlined style={{ color: '#2b4a35' }} />
-                        <Text strong style={{ color: '#2b4a35' }}>Nội dung ghi chú <span style={{ color: 'red' }}>*</span></Text>
-                    </div>
+                <div>
+                    <h4 className="flex items-center gap-2 font-semibold text-gray-800 mb-2">
+                        <Edit size={16} className="text-green-700" />
+                        Nội dung ghi chú <span className="text-red-500">*</span>
+                    </h4>
                     <TextArea
                         value={newNote}
                         onChange={(e) => setNewNote(e.target.value)}
                         placeholder="Nhập nội dung ghi chú..."
-                        autoSize={{ minRows: 4, maxRows: 8 }}
-                        style={{
-                            borderRadius: '12px',
-                            borderColor: '#d9d9d9',
-                            padding: '12px',
-                            marginBottom: '4px'
-                        }}
+                        rows={4}
                     />
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
-                        {/* Small hint or char count could go here */}
-                    </div>
                 </div>
 
                 {/* History Section */}
                 <div>
-                    <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <ClockCircleOutlined style={{ color: '#2b4a35' }} />
-                        <Text strong style={{ color: '#2b4a35' }}>Lịch sử ghi chú</Text>
-                    </div>
+                    <h4 className="flex items-center gap-2 font-semibold text-gray-800 mb-3">
+                        <Clock size={16} className="text-green-700" />
+                        Lịch sử ghi chú
+                    </h4>
 
                     <div
                         ref={listRef}
-                        style={{
-                            maxHeight: '300px',
-                            overflowY: 'auto',
-                            background: '#f9f9f9', // Very light grey bg for list area
-                            borderRadius: '12px',
-                            padding: '16px',
-                            border: '1px solid #f0f0f0'
-                        }}
+                        className="bg-gray-50 rounded-lg border border-gray-200 p-4 max-h-[300px] overflow-y-auto space-y-3"
                     >
                         {displayNotes.length === 0 ? (
-                            <div style={{ textAlign: 'center', color: '#ccc', padding: '20px' }}>Chưa có ghi chú nào</div>
+                            <div className="text-center text-gray-400 py-4">Chưa có ghi chú nào</div>
                         ) : (
-                            // Reverse display to show newest at top
                             [...displayNotes].reverse().map((item) => (
                                 <div
                                     key={item.id}
-                                    style={{
-                                        background: '#fff',
-                                        borderRadius: '12px',
-                                        padding: '16px',
-                                        marginBottom: '12px',
-                                        boxShadow: '0 2px 5px rgba(0,0,0,0.03)',
-                                        border: '1px solid #f0f0f0'
-                                    }}
+                                    className="bg-white rounded-lg p-4 shadow-sm border border-gray-100"
                                 >
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <ClockCircleOutlined style={{ color: '#9c27b0' }} />
-                                            <Text style={{ color: '#9c27b0', fontWeight: 500 }}>
-                                                {formatDate(item.createdAt, item.isLegacy)}
-                                            </Text>
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div className="flex items-center gap-2 text-purple-600 text-sm font-medium">
+                                            <Clock size={14} />
+                                            {formatDate(item.createdAt, item.isLegacy)}
                                         </div>
-                                        <div style={{ display: 'flex', gap: '4px' }}>
+                                        <div className="flex gap-1">
                                             {editingNoteId === item.id ? (
                                                 <>
-                                                    <Button size="small" type="primary" onClick={() => saveEdit(item.id)} icon={<SaveOutlined />} />
-                                                    <Button size="small" onClick={cancelEditing} icon={<CloseOutlined />} />
+                                                    <button onClick={() => saveEdit(item.id)} className="p-1 hover:text-green-600 text-green-500"><Save size={14} /></button>
+                                                    <button onClick={cancelEditing} className="p-1 hover:text-red-600 text-gray-400"><X size={14} /></button>
                                                 </>
                                             ) : (
                                                 <>
-                                                    <Button size="small" type="text" onClick={() => startEditing(item)} icon={<EditOutlined />} />
-                                                    <Button size="small" type="text" danger onClick={() => handleDelete(item.id)} icon={<DeleteOutlined />} />
+                                                    <button onClick={() => startEditing(item)} className="p-1 hover:text-blue-600 text-gray-400"><Edit size={14} /></button>
+                                                    <button onClick={() => handleDelete(item.id)} className="p-1 hover:text-red-600 text-gray-400"><Trash2 size={14} /></button>
                                                 </>
                                             )}
                                         </div>
@@ -332,16 +247,17 @@ const NoteModal = ({ visible, onCancel, task, onTaskUpdate }: NoteModalProps) =>
                                         <TextArea
                                             value={editingContent}
                                             onChange={(e) => setEditingContent(e.target.value)}
-                                            autoSize={{ minRows: 2, maxRows: 6 }}
+                                            rows={2}
+                                            className="mb-0"
                                         />
                                     ) : (
-                                        <div style={{ color: '#444', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>
+                                        <div className="text-gray-700 whitespace-pre-wrap text-sm leading-relaxed">
                                             {item.content}
                                         </div>
                                     )}
 
                                     {item.createdBy && (
-                                        <div style={{ marginTop: '8px', fontSize: '12px', color: '#999', textAlign: 'right', fontStyle: 'italic' }}>
+                                        <div className="mt-2 text-xs text-gray-400 text-right italic">
                                             Bởi: {item.createdBy}
                                         </div>
                                     )}
@@ -350,49 +266,9 @@ const NoteModal = ({ visible, onCancel, task, onTaskUpdate }: NoteModalProps) =>
                         )}
                     </div>
                 </div>
-
-                {/* Footer Actions */}
-                <div style={{
-                    marginTop: '24px',
-                    paddingTop: '16px',
-                    borderTop: '1px solid #f0f0f0',
-                    display: 'flex',
-                    justifyContent: 'flex-end',
-                    gap: '12px'
-                }}>
-                    <Button
-                        size="large"
-                        onClick={onCancel}
-                        style={{
-                            borderRadius: '8px',
-                            background: '#6c757d',
-                            color: '#fff',
-                            border: 'none',
-                            fontWeight: 600
-                        }}
-                    >
-                        Hủy
-                    </Button>
-                    <Button
-                        type="primary"
-                        size="large"
-                        onClick={handleSave}
-                        loading={submitting}
-                        style={{
-                            borderRadius: '8px',
-                            background: '#52c41a',
-                            borderColor: '#52c41a',
-                            fontWeight: 600,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px'
-                        }}
-                    >
-                        <SaveOutlined /> Lưu Ghi Chú
-                    </Button>
-                </div>
             </div>
-        </Modal >
+        </Modal>
     );
 };
+
 export default NoteModal;

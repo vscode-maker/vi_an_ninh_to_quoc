@@ -13,7 +13,7 @@ export async function getRelatedEntityByDataDonAnId(modelName: string, dataDonAn
     const validModels = [
         'bienPhapNganChan', 'hanhViToiDanh', 'nguoiThamGiaToTung',
         'quaTrinhDieuTra', 'thongTinCongVan', 'thongTinPhanCong',
-        'thongTinPhuongTien', 'thongTinTaiKhoan', 'thongTinThanhVienTrongHo',
+        'thongTinPhuongTien', 'thongTinTaiKhoan',
         'thongTinThietHai', 'thongTinTienAnTienSu', 'thongTinTruyNa', 'thongTinVatChung'
     ];
 
@@ -43,11 +43,16 @@ export async function getBoLuatList(search: string = '', page = 1) {
             { idBoLuat: { contains: search, mode: 'insensitive' } }
         ];
     }
-    return prisma.boLuat.findMany({
-        where,
-        take: pageSize,
-        skip: (page - 1) * pageSize
-    });
+    const [data, total] = await Promise.all([
+        prisma.boLuat.findMany({
+            where,
+            take: pageSize,
+            skip: (page - 1) * pageSize,
+            orderBy: { idBoLuat: 'asc' }
+        }),
+        prisma.boLuat.count({ where })
+    ]);
+    return { data, total };
 }
 
 // Map slugs to Prisma Models
@@ -63,7 +68,7 @@ const SLUG_TO_MODEL: { [key: string]: string } = {
     'cong-van': 'thongTinCongVan',
     'phan-cong': 'thongTinPhanCong',
     'qua-trinh': 'quaTrinhDieuTra',
-    'thanh-vien': 'thongTinThanhVienTrongHo',
+
     'hanh-vi': 'hanhViToiDanh',
     'thong-tin-chat': 'thongTinChat'
 };

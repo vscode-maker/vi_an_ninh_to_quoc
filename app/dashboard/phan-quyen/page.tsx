@@ -1,7 +1,7 @@
 
 import { getUsersWithPermissions, getPermissionDefinitions } from '@/lib/permission-actions';
 import PhanQuyenTable from './phan-quyen-table';
-import { Card } from 'antd';
+
 
 export default async function PhanQuyenPage() {
     const [users, permissions] = await Promise.all([

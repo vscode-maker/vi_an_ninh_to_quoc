@@ -1,31 +1,23 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
-import { Form, Input, DatePicker, Select, Button, Row, Col, Typography, message, Upload, Card, Popconfirm, Table, Spin } from 'antd';
+import React, { useState, useEffect, Suspense, useMemo } from 'react';
 import {
-    UploadOutlined,
-    PlusOutlined,
-    CloseOutlined,
-    UserOutlined,
-    BankOutlined,
-    MobileOutlined,
-    MessageOutlined,
-    FileTextOutlined,
-    SearchOutlined,
-    PaperClipOutlined,
-    LinkOutlined,
-    DeleteOutlined,
-    ClockCircleOutlined
-} from '@ant-design/icons';
+    Upload as UploadIcon, Plus, X, User, Banknote, Smartphone,
+    MessageCircle, FileText, Search, Paperclip, Link as LinkIcon,
+    Trash2, Clock, Check, AlertTriangle, MoreHorizontal
+} from 'lucide-react';
 import { updateTask, getExecutionUnits, getZaloGroups, getTaskAttachments, deleteTask } from '@/lib/task-actions';
 import { Task } from '@prisma/client';
 import dayjs from 'dayjs';
 
-const NoteModal = React.lazy(() => import('./note-modal'));
+import { Button } from '@/app/ui/components/button';
+import { Input } from '@/app/ui/components/input';
+import { TextArea } from '@/app/ui/components/textarea';
+import { Select } from '@/app/ui/components/select';
+import { FileUpload } from '@/app/ui/components/file-upload';
+import { Card } from '@/app/ui/components/card';
 
-const { Option, OptGroup } = Select;
-const { Text, Title } = Typography;
-const { TextArea } = Input;
+const NoteModal = React.lazy(() => import('./note-modal'));
 
 interface EditTaskFormProps {
     task: Task;
@@ -35,16 +27,15 @@ interface EditTaskFormProps {
 }
 
 const EditTaskForm = React.memo(function EditTaskForm({ task, onSuccess, onTaskUpdate, readOnly = false }: EditTaskFormProps) {
-    const [form] = Form.useForm();
-    const requestType = Form.useWatch('requestType', form);
+    const [loading, setLoading] = useState(false);
     const [executionUnits, setExecutionUnits] = useState<string[]>([]);
     const [zaloGroups, setZaloGroups] = useState<{ groupId: string; name: string }[]>([]);
     const [existingAttachments, setExistingAttachments] = useState<any[]>([]);
-    const [fileList, setFileList] = useState<any[]>([]);
+    const [files, setFiles] = useState<File[]>([]);
     const [addingNote, setAddingNote] = useState(false);
 
-    // Initial Values Derivation
-    const initialValues = React.useMemo(() => {
+    // Initial Values
+    const initialValues = useMemo(() => {
         let relatedPeople = [];
         if (task.moreInfo) {
             if (Array.isArray(task.moreInfo)) {
@@ -57,11 +48,36 @@ const EditTaskForm = React.memo(function EditTaskForm({ task, onSuccess, onTaskU
         }
 
         return {
-            ...task,
-            deadline: task.deadline ? dayjs(task.deadline) : null,
+            requestType: task.requestType || 'Sao kê',
+            groupId: task.groupId || '',
+            targetName: task.targetName || '',
+            deadline: task.deadline ? dayjs(task.deadline).format('YYYY-MM-DDTHH:mm') : '',
+            executionUnit: task.executionUnit ? (task.executionUnit.includes(',') ? task.executionUnit.split(', ') : [task.executionUnit]) : [],
+            status: task.status || 'Chưa thực hiện',
+            progressWarning: task.progressWarning || 'Bình thường',
+
+            // Search Detail Fields (Assuming strict mapping or reusing fields)
+            accountNumber: task.accountNumber || '',
+            bankName: task.bankName || '',
+            accountName: task.accountName || '',
+            phoneNumber: task.phoneNumber || '',
+            carrier: task.carrier || '',
+            qrCode: task.qrCode || '',
+            socialAccountName: task.socialAccountName || '',
+            documentInfo: task.documentInfo || '',
+            content: task.content || '',
+
             relatedPeople: relatedPeople
         };
     }, [task]);
+
+    const [formData, setFormData] = useState(initialValues);
+    const [relatedPeople, setRelatedPeople] = useState<any[]>(initialValues.relatedPeople);
+
+    useEffect(() => {
+        setFormData(initialValues);
+        setRelatedPeople(initialValues.relatedPeople);
+    }, [initialValues]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -81,414 +97,375 @@ const EditTaskForm = React.memo(function EditTaskForm({ task, onSuccess, onTaskU
         fetchData();
     }, [task.id]);
 
-    useEffect(() => {
-        form.resetFields();
-    }, [task, form, initialValues]);
+    const handleChange = (field: string, value: any) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
 
-    const onFinish = async (values: any) => {
-        const formData = new FormData();
+    const handleSubmit = async () => {
+        setLoading(true);
+        try {
+            const data = new FormData();
 
-        Object.keys(values).forEach(key => {
-            if (key !== 'files' && key !== 'relatedPeople' && values[key] !== undefined && values[key] !== null) {
-                if (key === 'deadline' && values[key]) {
-                    formData.append(key, values[key].toISOString());
-                } else {
-                    formData.append(key, values[key]);
+            // Append basic fields based on formData
+            Object.entries(formData).forEach(([key, value]) => {
+                if (key === 'executionUnit' && Array.isArray(value)) {
+                    // Join array to string for backend
+                    if (value.length > 0) data.append(key, value.join(', '));
+                } else if (key === 'deadline' && value) {
+                    data.append(key, new Date(value as string).toISOString());
+                } else if (key === 'relatedPeople') {
+                    // Skip, handled below
+                } else if (value !== null && value !== undefined) {
+                    data.append(key, value as string);
                 }
+            });
+
+            if (relatedPeople.length > 0) {
+                data.append('moreInfo', JSON.stringify(relatedPeople));
             }
-        });
 
-        if (values.relatedPeople && values.relatedPeople.length > 0) {
-            formData.append('moreInfo', JSON.stringify(values.relatedPeople));
-        }
+            // Append Files
+            files.forEach((file) => {
+                data.append('files', file);
+            });
 
-        // Handle new files
-        fileList.forEach((file: any) => {
-            if (file.originFileObj) {
-                formData.append('files', file.originFileObj);
+            const result = await updateTask(task.id, data);
+            if (result.success) {
+                alert(result.message);
+
+                const updatedTask = {
+                    ...task,
+                    ...formData,
+                    executionUnit: Array.isArray(formData.executionUnit) ? formData.executionUnit.join(', ') : formData.executionUnit,
+                    deadline: formData.deadline ? new Date(formData.deadline) : null,
+                    moreInfo: relatedPeople
+                };
+                onTaskUpdate(updatedTask);
+                onSuccess();
+            } else {
+                alert(result.message);
             }
-        });
-
-        const result = await updateTask(task.id, formData);
-        if (result.success) {
-            message.success(result.message);
-            // Construct updated task object for optimistic UI update (partial)
-            const updatedTask = {
-                ...task,
-                ...values,
-                deadline: values.deadline ? values.deadline.toDate() : null,
-                moreInfo: values.relatedPeople
-            };
-            onTaskUpdate(updatedTask);
-            onSuccess();
-        } else {
-            message.error(result.message);
+        } catch (error) {
+            console.error(error);
+            alert('Có lỗi xảy ra khi cập nhật');
+        } finally {
+            setLoading(false);
         }
     };
 
     const handleDelete = async () => {
-        const result = await deleteTask(task.id);
-        if (result.success) {
-            message.success(result.message);
-            // Parent needs to handle removal from list
-            // But here we can just close modal and let parent refresh or use onTaskUpdate/onDelete prop if we had it
-            // Kanban board handles delete via its own handler passed to TaskCard, but here we are in Edit Form.
-            // Ideally we should call a callback. For now simply closing. 
-            // Better: trigger a refresh or pass onDelete prop. 
-            // Re-use onSuccess to close. The parent list might need refresh.
-            // KanbanBoardOptimized passes handleEditCancel as onSuccess.
-            // It also has handleTaskUpdate.
-            // We should probably rely on `deleteTask` calling revalidatePath.
-            // But client state needs update. 
-            // Given I cannot easily add a new prop without changing interface in multiple places, 
-            // and `deleteTask` is imported here, I will rely on revalidation or page refresh for now, OR
-            // I can't easily fix the client state from here without a prop.
-            // Wait, `KanbanBoardOptimized` passes `handleDeleteTask` to `TaskCard` but not `EditTaskForm`.
-            // User can delete from Card. From Edit Form, ideally we use same handler.
-            // I'll leave it as is, standard server action + close.
-            onSuccess();
-            window.location.reload(); // Force reload to reflect delete if client state isn't updated
-        } else {
-            message.error(result.message);
+        if (!confirm('Bạn có chắc chắn muốn xóa công việc này không? Hành động này không thể hoàn tác.')) return;
+
+        try {
+            const result = await deleteTask(task.id);
+            if (result.success) {
+                alert(result.message);
+                onSuccess();
+                window.location.reload();
+            } else {
+                alert(result.message);
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Lỗi khi xóa công việc');
         }
     };
 
-    const uploadProps: any = {
-        onRemove: (file: any) => {
-            const index = fileList.indexOf(file);
-            const newFileList = fileList.slice();
-            newFileList.splice(index, 1);
-            setFileList(newFileList);
-        },
-        beforeUpload: (file: any) => {
-            setFileList(prev => [...prev, file]);
-            return false;
-        },
-        fileList,
-        multiple: true,
+    // Related People Helpers
+    const addPerson = () => {
+        setRelatedPeople([...relatedPeople, {
+            ho_ten: '', so_dien_thoai: '', ngay_sinh: '', gioi_tinh: '',
+            cccd_cmnd: '', ho_khau_thuong_tru: '', cho_o_hien_nay: '', link_facebook: ''
+        }]);
     };
 
-    // Table columns for related people
-    const relatedPeopleColumns = [
-        { title: 'Họ tên', dataIndex: 'ho_ten', key: 'ho_ten' },
-        { title: 'SĐT', dataIndex: 'so_dien_thoai', key: 'so_dien_thoai' },
-        { title: 'Ngày sinh', dataIndex: 'ngay_sinh', key: 'ngay_sinh' },
-        { title: 'Giới tính', dataIndex: 'gioi_tinh', key: 'gioi_tinh' },
-        { title: 'CCCD', dataIndex: 'cccd_cmnd', key: 'cccd_cmnd' },
-        { title: 'HKTT', dataIndex: 'ho_khau_thuong_tru', key: 'ho_khau_thuong_tru' },
-        { title: 'Chỗ ở', dataIndex: 'cho_o_hien_nay', key: 'cho_o_hien_nay' },
-        {
-            title: 'Facebook',
-            dataIndex: 'link_facebook',
-            key: 'link_facebook',
-            render: (text: string) => text ? <a href={text} target="_blank" rel="noopener noreferrer">Link</a> : ''
-        },
+    const removePerson = (index: number) => {
+        const newPeople = [...relatedPeople];
+        newPeople.splice(index, 1);
+        setRelatedPeople(newPeople);
+    };
+
+    const updatePerson = (index: number, field: string, value: string) => {
+        const newPeople = [...relatedPeople];
+        newPeople[index] = { ...newPeople[index], [field]: value };
+        setRelatedPeople(newPeople);
+    };
+
+    // Options
+    const requestTypeOptions = [
+        // Flattened list for simplicity or structured if Custom Select supports groups (it supports flat mostly)
+        { label: 'Sao kê', value: 'Sao kê' },
+        { label: 'Cung cấp thông tin', value: 'Cung cấp thông tin' },
+        { label: 'Cung cấp IP', value: 'Cung cấp IP' },
+        { label: 'Cung cấp hình ảnh', value: 'Cung cấp hình ảnh' },
+        { label: 'Rút list', value: 'Rút list' },
+        { label: 'Quét Imei', value: 'Quét Imei' },
+        { label: 'Giám sát', value: 'Giám sát' },
+        { label: 'Định vị', value: 'Định vị' },
+        { label: 'Cung cấp thông tin Zalo', value: 'Cung cấp thông tin Zalo' },
+        { label: 'Cung cấp IP Zalo', value: 'Cung cấp IP Zalo' },
+        { label: 'Công văn', value: 'Công văn' },
+        { label: 'Uỷ thác điều tra', value: 'Uỷ thác điều tra' },
+        { label: 'Xác minh phương tiện', value: 'Xác minh phương tiện' },
+        { label: 'Xác minh đối tượng', value: 'Xác minh đối tượng' },
+        { label: 'Vẽ sơ đồ đường dây', value: 'Vẽ sơ đồ đường dây' },
+        { label: 'Khác', value: 'Khác' }
+    ];
+
+    const groupOptions = zaloGroups.map(g => ({ label: g.name, value: g.groupId }));
+    const executionUnitOptions = executionUnits.map(u => ({ label: u, value: u }));
+    const statusOptions = [
+        { label: 'Chưa thực hiện', value: 'Chưa thực hiện' },
+        { label: 'Đang thực hiện', value: 'Đang thực hiện' },
+        { label: 'Hoàn thành', value: 'Hoàn thành' },
+        { label: 'Chờ kết quả', value: 'Chờ kết quả' }
+    ];
+    const progressWarningOptions = [
+        { label: 'Bình thường', value: 'Bình thường' },
+        { label: 'Cảnh báo', value: 'Cảnh báo' },
+        { label: 'Khẩn cấp', value: 'Khẩn cấp' }
     ];
 
     return (
-        <Form
-            form={form}
-            layout="vertical"
-            initialValues={initialValues}
-            onFinish={onFinish}
-            disabled={readOnly}
-        >
+        <div className="space-y-6 max-h-[80vh] overflow-y-auto p-1 text-sm">
             {/* 1. Loại Yêu Cầu */}
-            <div style={{ marginBottom: 24, padding: 16, border: '1px solid #f0f0f0', borderRadius: 8 }}>
-                <Title level={5} style={{ color: '#52c41a', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    1. Loại Yêu Cầu
-                </Title>
-                <Form.Item name="requestType" label="Chọn loại yêu cầu" rules={[{ required: true }]}>
-                    <Select placeholder="-- Chọn loại yêu cầu --" size="large">
-                        <OptGroup label={<span><BankOutlined /> Bank</span>}>
-                            <Option key="bank_saoke" value="Sao kê">Sao kê</Option>
-                            <Option value="Cung cấp thông tin">Cung cấp thông tin</Option>
-                            <Option value="Cung cấp IP">Cung cấp IP</Option>
-                            <Option value="Cung cấp hình ảnh">Cung cấp hình ảnh</Option>
-                        </OptGroup>
-                        <OptGroup label={<span><MobileOutlined /> Số điện thoại</span>}>
-                            <Option value="Rút list">Rút list</Option>
-                            <Option value="Quét Imei">Quét Imei</Option>
-                            <Option value="Giám sát">Giám sát</Option>
-                            <Option value="Định vị">Định vị</Option>
-                        </OptGroup>
-                        <OptGroup label={<span><MessageOutlined /> Zalo</span>}>
-                            <Option value="Cung cấp thông tin Zalo">Cung cấp thông tin Zalo</Option>
-                            <Option value="Cung cấp IP Zalo">Cung cấp IP Zalo</Option>
-                        </OptGroup>
-                        <OptGroup label={<span><FileTextOutlined /> Công văn</span>}>
-                            <Option value="Công văn">Công văn</Option>
-                            <Option value="Uỷ thác điều tra">Uỷ thác điều tra</Option>
-                        </OptGroup>
-                        <OptGroup label={<span><SearchOutlined /> Xác minh</span>}>
-                            <Option value="Xác minh phương tiện">Xác minh phương tiện</Option>
-                            <Option value="Xác minh đối tượng">Xác minh đối tượng</Option>
-                            <Option value="Vẽ sơ đồ đường dây">Vẽ sơ đồ đường dây</Option>
-                            <Option value="Khác">Khác</Option>
-                        </OptGroup>
-                    </Select>
-                </Form.Item>
+            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm relative pl-10">
+                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-green-500 rounded-l-lg"></div>
+                <div className="absolute left-3 top-4 text-green-600 font-bold bg-green-50 rounded-full w-6 h-6 flex items-center justify-center text-xs border border-green-200">1</div>
+
+                <h3 className="font-semibold text-gray-800 mb-3 ml-1">Loại Yêu Cầu</h3>
+                <Select
+                    label="Chọn loại yêu cầu"
+                    options={requestTypeOptions}
+                    value={formData.requestType}
+                    onChange={(e) => handleChange('requestType', e.target.value)}
+                    disabled={readOnly}
+                />
             </div>
 
             {/* 2. Thông Tin Chung */}
-            <div style={{ marginBottom: 24, padding: 16, border: '1px solid #f0f0f0', borderRadius: 8 }}>
-                <Title level={5} style={{ color: '#52c41a', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    2. Thông Tin Chung
-                </Title>
+            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm relative pl-10">
+                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-500 rounded-l-lg"></div>
+                <div className="absolute left-3 top-4 text-blue-600 font-bold bg-blue-50 rounded-full w-6 h-6 flex items-center justify-center text-xs border border-blue-200">2</div>
 
-                <Form.Item name="groupId" label="Nhóm/Chuyên án" rules={[{ required: true }]}>
-                    <Select placeholder="-- Chọn nhóm --" showSearch optionFilterProp="children" size="large">
-                        {zaloGroups.map(group => (
-                            <Option key={group.groupId} value={group.groupId}>{group.name}</Option>
-                        ))}
-                    </Select>
-                </Form.Item>
-
-                <Row gutter={16}>
-                    <Col span={12}>
-                        <Form.Item name="targetName" label="Họ Tên Đối Tượng" rules={[{ required: true }]}>
-                            <Input placeholder="Nhập tên đối tượng" size="large" />
-                        </Form.Item>
-                    </Col>
-                    <Col span={12}>
-                        <Form.Item name="deadline" label="Thời Hạn">
-                            <DatePicker showTime format="DD/MM/YYYY HH:mm" style={{ width: '100%' }} size="large" />
-                        </Form.Item>
-                    </Col>
-                </Row>
-
-                <Form.Item name="executionUnit" label="Đơn vị Thực Hiện">
-                    <Select placeholder="Chọn đơn vị thực hiện..." showSearch optionFilterProp="children" size="large">
-                        {executionUnits.map((unit) => (
-                            <Option key={unit} value={unit}>{unit}</Option>
-                        ))}
-                    </Select>
-                </Form.Item>
+                <h3 className="font-semibold text-gray-800 mb-3 ml-1">Thông Tin Chung</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Select
+                        label="Nhóm *"
+                        options={groupOptions}
+                        value={formData.groupId}
+                        onChange={(e) => handleChange('groupId', e.target.value)}
+                        disabled={readOnly}
+                    />
+                    <Input
+                        label="Họ Tên Đối Tượng *"
+                        value={formData.targetName}
+                        onChange={(e) => handleChange('targetName', e.target.value)}
+                        disabled={readOnly}
+                    />
+                    <Input
+                        label="Thời Hạn"
+                        type="datetime-local"
+                        value={formData.deadline}
+                        onChange={(e) => handleChange('deadline', e.target.value)}
+                        disabled={readOnly}
+                    />
+                    <Select
+                        label="Đơn vị Thực Hiện"
+                        options={executionUnitOptions}
+                        value={formData.executionUnit[0] || ''}
+                        onChange={(e) => handleChange('executionUnit', [e.target.value])}
+                        disabled={readOnly}
+                    />
+                </div>
             </div>
 
             {/* 3. Chi Tiết Yêu Cầu */}
-            <div style={{ marginBottom: 24, padding: 16, border: '1px solid #f0f0f0', borderRadius: 8 }}>
-                <Title level={5} style={{ color: '#52c41a', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    3. Chi Tiết Yêu Cầu
-                </Title>
+            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm relative pl-10">
+                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-purple-500 rounded-l-lg"></div>
+                <div className="absolute left-3 top-4 text-purple-600 font-bold bg-purple-50 rounded-full w-6 h-6 flex items-center justify-center text-xs border border-purple-200">3</div>
 
-                {['Sao kê', 'Cung cấp thông tin', 'Cung cấp IP', 'Cung cấp hình ảnh', 'Ngân hàng'].includes(requestType) && (
-                    <div style={{ background: '#fafafa', padding: 16, borderRadius: 8 }}>
-                        <Text strong style={{ display: 'block', marginBottom: 12 }}>Thông tin ngân hàng:</Text>
-                        <Row gutter={16}>
-                            <Col span={8}><Form.Item name="accountNumber" label="Số tài khoản"><Input /></Form.Item></Col>
-                            <Col span={8}><Form.Item name="bankName" label="Ngân hàng"><Input /></Form.Item></Col>
-                            <Col span={8}><Form.Item name="accountName" label="Tên chủ TK"><Input /></Form.Item></Col>
-                        </Row>
+                <h3 className="font-semibold text-gray-800 mb-3 ml-1">Chi Tiết Yêu Cầu</h3>
+
+                {['Sao kê', 'Cung cấp thông tin', 'Cung cấp IP', 'Cung cấp hình ảnh', 'Ngân hàng'].includes(formData.requestType) && (
+                    <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
+                        <h4 className="font-medium text-gray-700 mb-2 flex items-center gap-2"><Banknote size={14} /> Thông tin ngân hàng:</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <Input label="Số tài khoản" value={formData.accountNumber} onChange={(e) => handleChange('accountNumber', e.target.value)} disabled={readOnly} />
+                            <Input label="Ngân hàng" value={formData.bankName} onChange={(e) => handleChange('bankName', e.target.value)} disabled={readOnly} />
+                            <Input label="Tên chủ TK" value={formData.accountName} onChange={(e) => handleChange('accountName', e.target.value)} disabled={readOnly} />
+                        </div>
                     </div>
                 )}
 
-                {['Rút list', 'Định vị', 'Quét Imei', 'Giám sát', 'Xác minh số điện thoại'].includes(requestType) && (
-                    <div style={{ background: '#fafafa', padding: 16, borderRadius: 8 }}>
-                        <Text strong style={{ display: 'block', marginBottom: 12 }}>Thông tin thuê bao:</Text>
-                        <Row gutter={16}>
-                            <Col span={12}><Form.Item name="phoneNumber" label="Số điện thoại"><Input /></Form.Item></Col>
-                            <Col span={12}><Form.Item name="carrier" label="Nhà mạng"><Input /></Form.Item></Col>
-                        </Row>
+                {['Rút list', 'Định vị', 'Quét Imei', 'Giám sát', 'Xác minh số điện thoại'].includes(formData.requestType) && (
+                    <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
+                        <h4 className="font-medium text-gray-700 mb-2 flex items-center gap-2"><Smartphone size={14} /> Thông tin thuê bao:</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <Input label="Số điện thoại" value={formData.phoneNumber} onChange={(e) => handleChange('phoneNumber', e.target.value)} disabled={readOnly} />
+                            <Input label="Nhà mạng" value={formData.carrier} onChange={(e) => handleChange('carrier', e.target.value)} disabled={readOnly} />
+                        </div>
                     </div>
                 )}
 
-                {['Cung cấp thông tin Zalo', 'Cung cấp IP Zalo', 'Zalo'].includes(requestType) && (
-                    <div style={{ background: '#fafafa', padding: 16, borderRadius: 8 }}>
-                        <Text strong style={{ display: 'block', marginBottom: 12 }}>Thông tin Zalo:</Text>
-                        <Row gutter={16}>
-                            <Col span={12}><Form.Item name="phoneNumber" label="Số điện thoại Zalo"><Input /></Form.Item></Col>
-                            <Col span={12}><Form.Item name="carrier" label="Nhà mạng"><Input /></Form.Item></Col>
-                        </Row>
-                        <Row gutter={16}>
-                            <Col span={12}><Form.Item name="qrCode" label="Mã QR/ID Zalo"><Input placeholder="Nhập mã QR hoặc ID Zalo" /></Form.Item></Col>
-                            <Col span={12}><Form.Item name="socialAccountName" label="Tên tài khoản MXH"><Input placeholder="Tên hiển thị trên Zalo" /></Form.Item></Col>
-                        </Row>
+                {['Cung cấp thông tin Zalo', 'Cung cấp IP Zalo', 'Zalo'].includes(formData.requestType) && (
+                    <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
+                        <h4 className="font-medium text-gray-700 mb-2 flex items-center gap-2"><MessageCircle size={14} /> Thông tin Zalo:</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                            <Input label="Số điện thoại Zalo" value={formData.phoneNumber} onChange={(e) => handleChange('phoneNumber', e.target.value)} disabled={readOnly} />
+                            <Input label="Nhà mạng" value={formData.carrier} onChange={(e) => handleChange('carrier', e.target.value)} disabled={readOnly} />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <Input label="Mã QR/ID Zalo" value={formData.qrCode} onChange={(e) => handleChange('qrCode', e.target.value)} disabled={readOnly} />
+                            <Input label="Tên tài khoản MXH" value={formData.socialAccountName} onChange={(e) => handleChange('socialAccountName', e.target.value)} disabled={readOnly} />
+                        </div>
                     </div>
                 )}
 
-                {['Công văn', 'Uỷ thác điều tra'].includes(requestType) && (
-                    <div style={{ background: '#fafafa', padding: 16, borderRadius: 8 }}>
-                        <Form.Item name="documentInfo" label="Thông tin văn bản/Quyết định">
-                            <Input.TextArea rows={2} placeholder="Số công văn, ngày tháng, nội dung tóm tắt..." />
-                        </Form.Item>
+                {['Công văn', 'Uỷ thác điều tra'].includes(formData.requestType) && (
+                    <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
+                        <TextArea
+                            label="Thông tin văn bản/Quyết định"
+                            value={formData.documentInfo}
+                            onChange={(e) => handleChange('documentInfo', e.target.value)}
+                            rows={2}
+                            disabled={readOnly}
+                        />
                     </div>
                 )}
             </div>
 
             {/* 4. Nội Dung & Đính Kèm */}
-            <div style={{ marginBottom: 24, padding: 16, border: '1px solid #f0f0f0', borderRadius: 8 }}>
-                <Title level={5} style={{ color: '#52c41a', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    4. Nội Dung & Đính Kèm
-                </Title>
+            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm relative pl-10">
+                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-orange-500 rounded-l-lg"></div>
+                <div className="absolute left-3 top-4 text-orange-600 font-bold bg-orange-50 rounded-full w-6 h-6 flex items-center justify-center text-xs border border-orange-200">4</div>
 
-                <Form.Item name="content" label="Nội dung chi tiết">
-                    <TextArea rows={4} placeholder="Nhập nội dung chi tiết..." />
-                </Form.Item>
+                <h3 className="font-semibold text-gray-800 mb-3 ml-1">Nội Dung & File</h3>
+                <div className="space-y-4">
+                    <TextArea
+                        label="Nội dung chi tiết"
+                        value={formData.content}
+                        onChange={(e) => handleChange('content', e.target.value)}
+                        rows={4}
+                        disabled={readOnly}
+                    />
 
-                <Form.Item name="progressWarning" label="Cảnh báo tiến độ">
-                    <Select>
-                        <Option value="Bình thường">Bình thường</Option>
-                        <Option value="Cảnh báo">Cảnh báo</Option>
-                        <Option value="Khẩn cấp">Khẩn cấp</Option>
-                    </Select>
-                </Form.Item>
+                    <Select
+                        label="Cảnh báo tiến độ"
+                        options={progressWarningOptions}
+                        value={formData.progressWarning}
+                        onChange={(e) => handleChange('progressWarning', e.target.value)}
+                        disabled={readOnly}
+                    />
 
-                {!readOnly && (
-                    <Form.Item label="Thêm file đính kèm (nếu có)">
-                        <Upload {...uploadProps}>
-                            <Button icon={<UploadOutlined />}>Chọn file</Button>
-                        </Upload>
-                    </Form.Item>
-                )}
+                    {!readOnly && (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Thêm file đính kèm</label>
+                            <FileUpload
+                                value={files}
+                                onChange={setFiles}
+                                multiple
+                                maxSizeInMB={20}
+                            />
+                        </div>
+                    )}
 
-                {existingAttachments.length > 0 && (
-                    <div style={{ marginTop: 16, padding: 12, background: '#fafafa', borderRadius: 8, border: '1px solid #f0f0f0' }}>
-                        <Text strong style={{ display: 'block', marginBottom: 8 }}>
-                            <PaperClipOutlined /> Tệp đính kèm đã lưu ({existingAttachments.length})
-                        </Text>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                            {existingAttachments.map((file) => (
-                                <div key={file.fileId} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: 8, background: '#fff', border: '1px solid #e6e6e6', borderRadius: 4 }}>
-                                    <div style={{ flex: 1 }}>
-                                        <a href={file.fileLink || '#'} target="_blank" rel="noopener noreferrer" style={{ fontWeight: 500, color: '#1890ff', display: 'flex', alignItems: 'center' }}>
-                                            <LinkOutlined style={{ marginRight: 6 }} />
+                    {existingAttachments.length > 0 && (
+                        <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                            <h4 className="font-medium text-gray-700 mb-2 flex items-center gap-2 text-xs uppercase tracking-wider">
+                                <Paperclip size={12} /> Tệp đính kèm đã lưu ({existingAttachments.length})
+                            </h4>
+                            <div className="space-y-2">
+                                {existingAttachments.map((file) => (
+                                    <div key={file.fileId} className="flex items-center justify-between p-2 bg-white border border-gray-200 rounded shadow-sm">
+                                        <a
+                                            href={file.fileLink || '#'}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-blue-600 hover:text-blue-800 flex items-center gap-2 text-sm font-medium truncate"
+                                        >
+                                            <LinkIcon size={14} />
                                             {file.fileName || 'Không tên'}
                                         </a>
-                                        {/* Optional: Add file type icon or size */}
+                                        <span className="text-xs text-gray-400">
+                                            {file.updatedAt ? dayjs(file.updatedAt).format('DD/MM/YYYY') : ''}
+                                        </span>
                                     </div>
-                                    <div style={{ fontSize: '12px', color: '#999', whiteSpace: 'nowrap', marginLeft: 8 }}>
-                                        {file.updatedAt ? dayjs(file.updatedAt).format('DD/MM/YYYY HH:mm') : ''}
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Check for Related People */}
+                    <div className="pt-4 border-t border-gray-100">
+                        <h4 className="font-medium text-gray-700 mb-3 flex items-center gap-2">
+                            <User size={16} /> Thông tin đối tượng liên quan (Optional)
+                        </h4>
+
+                        <div className="space-y-4">
+                            {relatedPeople.map((person, index) => (
+                                <div key={index} className="bg-gray-50 p-3 rounded border border-gray-200 relative">
+                                    {!readOnly && (
+                                        <button
+                                            onClick={() => removePerson(index)}
+                                            className="absolute top-2 right-2 text-gray-400 hover:text-red-500 p-1"
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    )}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <Input label="Họ tên" value={person.ho_ten} onChange={(e) => updatePerson(index, 'ho_ten', e.target.value)} disabled={readOnly} placeholder="Họ tên" />
+                                        <Input label="SĐT" value={person.so_dien_thoai} onChange={(e) => updatePerson(index, 'so_dien_thoai', e.target.value)} disabled={readOnly} placeholder="SĐT" />
+                                        <Input label="Ngày sinh" value={person.ngay_sinh} onChange={(e) => updatePerson(index, 'ngay_sinh', e.target.value)} disabled={readOnly} placeholder="DD/MM/YYYY" />
+                                        <Input label="CCCD" value={person.cccd_cmnd} onChange={(e) => updatePerson(index, 'cccd_cmnd', e.target.value)} disabled={readOnly} placeholder="CCCD" />
+                                        <Input label="HKTT" value={person.ho_khau_thuong_tru} onChange={(e) => updatePerson(index, 'ho_khau_thuong_tru', e.target.value)} disabled={readOnly} className="md:col-span-2" placeholder="Hộ khẩu" />
+                                        <Input label="Link FB" value={person.link_facebook} onChange={(e) => updatePerson(index, 'link_facebook', e.target.value)} disabled={readOnly} className="md:col-span-2" placeholder="Facebook Link" />
                                     </div>
                                 </div>
                             ))}
+                            {!readOnly && (
+                                <Button variant="outline" onClick={addPerson} className="w-full border-dashed" icon={<Plus size={16} />}>
+                                    Thêm đối tượng
+                                </Button>
+                            )}
                         </div>
                     </div>
-                )}
 
-                {/* Related People Section - Conditional Rendering */}
-                <div style={{ background: '#f9f9f9', padding: 16, borderRadius: 8, marginTop: 16 }}>
-                    <Text strong style={{ display: 'block', marginBottom: 16 }}><UserOutlined /> Thông tin đối tượng liên quan (Optional)</Text>
-                    {readOnly ? (
-                        <Table
-                            dataSource={initialValues.relatedPeople}
-                            columns={relatedPeopleColumns}
-                            pagination={false}
-                            size="small"
-                            bordered
-                            rowKey={(record: any) => record.ho_ten + record.so_dien_thoai} // unique key
-                            scroll={{ x: 'max-content' }}
-                        />
-                    ) : (
-                        <Form.List name="relatedPeople">
-                            {(fields, { add, remove }) => (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                                    {fields.map(({ key, name, ...restField }) => (
-                                        <Card
-                                            key={key}
-                                            size="small"
-                                            title={`Đối tượng #${name + 1}`}
-                                            extra={<CloseOutlined onClick={() => remove(name)} />}
-                                        >
-                                            <Row gutter={16}>
-                                                <Col span={12}>
-                                                    <Form.Item {...restField} name={[name, 'ho_ten']} label="Họ tên">
-                                                        <Input placeholder="Họ tên" />
-                                                    </Form.Item>
-                                                </Col>
-                                                <Col span={12}>
-                                                    <Form.Item {...restField} name={[name, 'so_dien_thoai']} label="Số điện thoại">
-                                                        <Input placeholder="Số điện thoại" />
-                                                    </Form.Item>
-                                                </Col>
-                                                <Col span={8}>
-                                                    <Form.Item {...restField} name={[name, 'ngay_sinh']} label="Ngày sinh">
-                                                        <Input placeholder="DD/MM/YYYY" />
-                                                    </Form.Item>
-                                                </Col>
-                                                <Col span={8}>
-                                                    <Form.Item {...restField} name={[name, 'gioi_tinh']} label="Giới tính">
-                                                        <Select placeholder="Chọn">
-                                                            <Option value="Nam">Nam</Option>
-                                                            <Option value="Nữ">Nữ</Option>
-                                                        </Select>
-                                                    </Form.Item>
-                                                </Col>
-                                                <Col span={8}>
-                                                    <Form.Item {...restField} name={[name, 'cccd_cmnd']} label="CCCD/CMND">
-                                                        <Input placeholder="Số CCCD" />
-                                                    </Form.Item>
-                                                </Col>
-                                                <Col span={24}>
-                                                    <Form.Item {...restField} name={[name, 'ho_khau_thuong_tru']} label="HKTT">
-                                                        <Input placeholder="Hộ khẩu thường trú" />
-                                                    </Form.Item>
-                                                </Col>
-                                                <Col span={24}>
-                                                    <Form.Item {...restField} name={[name, 'cho_o_hien_nay']} label="Chỗ ở hiện nay">
-                                                        <Input placeholder="Chỗ ở hiện nay" />
-                                                    </Form.Item>
-                                                </Col>
-                                                <Col span={24}>
-                                                    <Form.Item {...restField} name={[name, 'link_facebook']} label="Link Facebook">
-                                                        <Input placeholder="https://facebook.com/..." />
-                                                    </Form.Item>
-                                                </Col>
-                                            </Row>
-                                        </Card>
-                                    ))}
-                                    <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
-                                        Thêm thông tin đối tượng
-                                    </Button>
-                                </div>
-                            )}
-                        </Form.List>
-                    )}
-                </div>
-
-                {/* Note Section */}
-                <div style={{ marginTop: 24, padding: '16px', background: '#fff', borderRadius: '12px', border: '1px solid #e0e0e0' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                        <Text strong style={{ fontSize: '15px', color: '#2b4a35' }}>
-                            <FileTextOutlined style={{ marginRight: 8 }} />
+                    {/* History/Notes Button */}
+                    <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100 flex justify-between items-center">
+                        <div className="text-blue-800 font-medium flex items-center gap-2">
+                            <Clock size={16} />
                             Lịch sử hoạt động / Ghi chú
-                        </Text>
-
+                            <span className="bg-blue-200 text-blue-800 text-xs px-2 py-0.5 rounded-full">
+                                {task.notes && Array.isArray(task.notes) ? task.notes.length : 0}
+                            </span>
+                        </div>
                         <Button
+                            variant="secondary"
+                            size="sm"
                             onClick={() => setAddingNote(true)}
-                            style={{ color: '#52c41a', borderColor: '#52c41a' }}
-                            icon={<FileTextOutlined />}
-                            size="small"
+                            icon={<FileText size={14} />}
                         >
                             Xem & Thêm Ghi Chú
                         </Button>
                     </div>
-                    {task.notes && (
-                        <div style={{ fontSize: '13px', color: '#666' }}>
-                            {(Array.isArray(task.notes) && task.notes.length > 0) ? (
-                                <span>
-                                    <ClockCircleOutlined style={{ marginRight: 4 }} />
-                                    {task.notes.length} ghi chú.
-                                </span>
-                            ) : null}
-                        </div>
-                    )}
+
                 </div>
             </div>
 
             {/* 5. Trạng Thái */}
-            <div style={{ marginBottom: 24, padding: 16, border: '1px solid #f0f0f0', borderRadius: 8 }}>
-                <Title level={5} style={{ color: '#52c41a', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    5. Trạng Thái
-                </Title>
-                <Form.Item name="status" label="Trạng Thái" rules={[{ required: true }]}>
-                    <Select size="large">
-                        <Option value="Chưa thực hiện">Chưa thực hiện</Option>
-                        <Option value="Đang thực hiện">Đang thực hiện</Option>
-                        <Option value="Hoàn thành">Hoàn thành</Option>
-                        <Option value="Chờ kết quả">Chờ kết quả</Option>
-                    </Select>
-                </Form.Item>
+            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm relative pl-10">
+                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-teal-500 rounded-l-lg"></div>
+                <div className="absolute left-3 top-4 text-teal-600 font-bold bg-teal-50 rounded-full w-6 h-6 flex items-center justify-center text-xs border border-teal-200">5</div>
+
+                <h3 className="font-semibold text-gray-800 mb-3 ml-1">Trạng Thái</h3>
+                <Select
+                    label="Trạng Thái hiện tại"
+                    options={statusOptions}
+                    value={formData.status}
+                    onChange={(e) => handleChange('status', e.target.value)}
+                    disabled={readOnly}
+                />
             </div>
 
             {/* Note Modal */}
@@ -504,28 +481,34 @@ const EditTaskForm = React.memo(function EditTaskForm({ task, onSuccess, onTaskU
             </Suspense>
 
             {/* Footer Actions */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, paddingTop: 16, borderTop: '1px solid #f0f0f0' }}>
+            <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-100">
                 {!readOnly && (
-                    <Popconfirm
-                        title="Xóa công việc"
-                        description="Bạn có chắc chắn muốn xóa công việc này không?"
-                        onConfirm={handleDelete}
-                        okText="Có"
-                        cancelText="Không"
+                    <Button
+                        variant="danger"
+                        onClick={handleDelete}
+                        icon={<Trash2 size={16} />}
                     >
-                        <Button danger icon={<DeleteOutlined />}>Xóa</Button>
-                    </Popconfirm>
+                        Xóa
+                    </Button>
                 )}
-                <div style={{ display: 'flex', gap: 8, width: readOnly ? '100%' : 'auto', justifyContent: readOnly ? 'flex-end' : 'flex-end' }}>
-                    <Button onClick={onSuccess}>{readOnly ? 'Đóng' : 'Hủy'}</Button>
+
+                <div className="flex gap-2 ml-auto">
+                    <Button variant="ghost" onClick={onSuccess}>
+                        {readOnly ? 'Đóng' : 'Hủy'}
+                    </Button>
                     {!readOnly && (
-                        <Button type="primary" htmlType="submit" style={{ background: '#52c41a', borderColor: '#52c41a', minWidth: 120 }}>
+                        <Button
+                            variant="primary"
+                            onClick={handleSubmit}
+                            loading={loading}
+                            icon={<Check size={16} />}
+                        >
                             Lưu Thay Đổi
                         </Button>
                     )}
                 </div>
             </div>
-        </Form>
+        </div>
     );
 });
 

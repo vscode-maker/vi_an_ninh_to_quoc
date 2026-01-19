@@ -119,13 +119,30 @@ export async function deleteDataDonAn(id: string) {
     }
 
     try {
-        await prisma.dataDonAn.delete({
-            where: { id }
-        });
+        // Use transaction to delete all related data first
+        await prisma.$transaction([
+            // Delete related tables
+            prisma.bienPhapNganChan.deleteMany({ where: { dataDonAnId: id } }),
+            prisma.hanhViToiDanh.deleteMany({ where: { dataDonAnId: id } }),
+            prisma.nguoiThamGiaToTung.deleteMany({ where: { dataDonAnId: id } }),
+            prisma.quaTrinhDieuTra.deleteMany({ where: { dataDonAnId: id } }),
+            prisma.thongTinCongVan.deleteMany({ where: { dataDonAnId: id } }),
+            prisma.thongTinPhanCong.deleteMany({ where: { dataDonAnId: id } }),
+            prisma.thongTinThietHai.deleteMany({ where: { dataDonAnId: id } }),
+            prisma.thongTinTienAnTienSu.deleteMany({ where: { dataDonAnId: id } }),
+            prisma.thongTinTruyNa.deleteMany({ where: { dataDonAnId: id } }),
+            prisma.thongTinVatChung.deleteMany({ where: { dataDonAnId: id } }),
+
+            // Finally delete the main record
+            prisma.dataDonAn.delete({
+                where: { id }
+            })
+        ]);
+
         revalidatePath('/dashboard/data-don-an');
         return true;
     } catch (error) {
         console.error('Delete failed:', error);
-        throw new Error('Failed to delete. Likely has related data.');
+        throw new Error('Failed to delete. Error: ' + (error as any).message);
     }
 }

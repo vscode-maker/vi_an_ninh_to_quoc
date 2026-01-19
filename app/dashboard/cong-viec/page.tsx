@@ -1,6 +1,6 @@
 
 import { fetchTasks } from '@/lib/data';
-import KanbanBoard from '@/app/ui/dashboard/kanban-board-optimized'; // Path remains valid
+import KanbanBoard from '@/app/ui/dashboard/kanban-board'; // Path remains valid
 
 export default async function CongViecPage(props: {
     searchParams?: Promise<{

@@ -2,60 +2,63 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { Layout, Menu, Divider, Typography } from 'antd';
+import Link from 'next/link';
 import {
-    HomeOutlined,
-    ProjectOutlined,
-    SettingOutlined,
-    LogoutOutlined,
-    MenuFoldOutlined,
-    MenuUnfoldOutlined,
-    TeamOutlined,
-    SafetyCertificateOutlined,
-    UserOutlined,
-    MessageOutlined,
-    FileTextOutlined,
-    SolutionOutlined,
-    BookOutlined,
-    AppstoreOutlined
-} from '@ant-design/icons';
+    User as UserIcon
+} from 'lucide-react';
+import {
+    Users,
+    FolderOpen,
+    Settings,
+    LogOut,
+    Scan,
+    FileText,
+    MessageSquare,
+    Shield,
+    BookOpen,
+    ClipboardList,
+    Database
+} from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 
-const { Sider } = Layout;
-const { Text } = Typography;
+// const { Text } = Typography; // Removed Antd
 
 interface SideNavProps {
-    collapsed: boolean;
-    setCollapsed: (collapsed: boolean) => void;
     isMobile?: boolean;
+    mobileOpen?: boolean;
+    setMobileOpen?: (open: boolean) => void;
 }
 
-export default function SideNav({ collapsed, setCollapsed, isMobile = false }: SideNavProps) {
+export default function SideNav({ isMobile = false, mobileOpen = false, setMobileOpen }: SideNavProps) {
     const pathname = usePathname();
     const router = useRouter();
 
-    // Menu items configuration
-
+    // Menu items configuration with Lucide icons
     const menuItems = [
         {
             key: '/dashboard/cong-dan',
-            icon: <TeamOutlined />,
+            icon: <Users size={20} />,
             label: 'Công dân',
         },
         {
+            key: '/dashboard/cong-dan/ocr',
+            icon: <Scan size={20} />,
+            label: 'OCR Công dân',
+        },
+        {
             key: '/dashboard/cong-viec',
-            icon: <ProjectOutlined />,
+            icon: <ClipboardList size={20} />,
             label: 'Công việc',
         },
         {
             key: '/dashboard/data-don-an',
-            icon: <SolutionOutlined />,
+            icon: <Database size={20} />,
             label: 'Quản lý Đơn án',
         },
         {
-            key: 'danh-muc', // SubMenu key
-            icon: <AppstoreOutlined />,
+            key: 'danh-muc',
+            icon: <FolderOpen size={20} />,
             label: 'Danh mục dữ liệu',
             children: [
                 { key: '/dashboard/danh-muc/nguoi-tham-gia', label: 'Người tham gia tố tụng' },
@@ -76,33 +79,28 @@ export default function SideNav({ collapsed, setCollapsed, isMobile = false }: S
         },
         {
             key: '/dashboard/bo-luat',
-            icon: <BookOutlined />,
+            icon: <BookOpen size={20} />,
             label: 'Tra cứu Bộ Luật',
         },
         {
             key: '/dashboard/nhan-vien',
-            icon: <UserOutlined />,
+            icon: <UserIcon size={20} />,
             label: 'Nhân viên',
         },
         {
             key: '/dashboard/zalo',
-            icon: <MessageOutlined />, // or WechatOutlined if available in generic
+            icon: <MessageSquare size={20} />,
             label: 'Nhóm Zalo',
         },
         {
             key: '/dashboard/tai-lieu',
-            icon: <FileTextOutlined />,
+            icon: <FileText size={20} />,
             label: 'Tài liệu',
         },
         {
             key: '/dashboard/phan-quyen',
-            icon: <SafetyCertificateOutlined />,
+            icon: <Shield size={20} />,
             label: 'Phân quyền',
-        },
-        {
-            key: '/dashboard/cai-dat',
-            icon: <SettingOutlined />,
-            label: 'Cài đặt',
         },
     ];
 
@@ -111,16 +109,15 @@ export default function SideNav({ collapsed, setCollapsed, isMobile = false }: S
     // Permission Mapping
     const PERMISSION_MAPPING: { [key: string]: string } = {
         '/dashboard/cong-dan': 'VIEW_CITIZEN',
+        '/dashboard/cong-dan/ocr': 'CREATE_CITIZEN',
         '/dashboard/cong-viec': 'VIEW_TASK',
         '/dashboard/nhan-vien': 'VIEW_EMPLOYEE',
         '/dashboard/zalo': 'VIEW_ZALO',
         '/dashboard/tai-lieu': 'VIEW_FILE',
         '/dashboard/phan-quyen': 'VIEW_USER',
         '/dashboard/cai-dat': 'VIEW_SETTING',
-        // New Modules
         '/dashboard/data-don-an': 'VIEW_DATA_DON_AN',
         '/dashboard/bo-luat': 'VIEW_BO_LUAT',
-        // Generic Modules - Map specific routes
         '/dashboard/danh-muc/nguoi-tham-gia': 'VIEW_NGUOI_THAM_GIA',
         '/dashboard/danh-muc/phuong-tien': 'VIEW_PHUONG_TIEN',
         '/dashboard/danh-muc/vat-chung': 'VIEW_VAT_CHUNG',
@@ -128,26 +125,13 @@ export default function SideNav({ collapsed, setCollapsed, isMobile = false }: S
         '/dashboard/danh-muc/tien-an': 'VIEW_TIEN_AN',
         '/dashboard/danh-muc/bien-phap': 'VIEW_BIEN_PHAP',
         '/dashboard/danh-muc/thong-tin-chat': 'VIEW_THONG_TIN_CHAT',
-        // Add default mapping for parent 'danh-muc' if needed, or leave blank? 
-        // Parent menu visibility depends on children usually or explicit check manually?
-        // Sidenav logic: generic 'danh-muc' key -> 'VIEW_DANH_MUC' (Deleted).
-        // Strategy: Parent shows if any child shows (Ant Design behavior usually requires logic, but here we filter item list).
-        // Let's remove 'danh-muc' mapping and let logic handle it, OR map to a common permission if we had one.
-        // Actually, the filter logic iterates children? No, it filters top level.
-        // If top level has children, we need to filter children first.
-
-        // Wait, current logic:
-        // const requiredPerm = PERMISSION_MAPPING[item.key];
-        // If item has children, we should check recursive access.
-
-        // I need to update the filter logic in Step 3550. For now, add mappings.
     };
 
     const checkAccess = (key: string) => {
         const user = session?.user as any;
         if (user?.role === 'admin' || user?.permissions?.includes('MANAGE_SYSTEM')) return true;
         const requiredPerm = PERMISSION_MAPPING[key];
-        if (!requiredPerm) return true; // Public or no specific lock
+        if (!requiredPerm) return true;
         return user?.permissions?.includes(requiredPerm);
     };
 
@@ -169,163 +153,266 @@ export default function SideNav({ collapsed, setCollapsed, isMobile = false }: S
 
     const filteredMenuItems = filterItems(menuItems);
 
-    const handleMenuClick = (key: string) => {
-        router.push(key);
-        // On mobile, close sidebar after navigation
-        if (window.innerWidth < 992) {
-            setCollapsed(true);
-        }
-    };
-
     const handleLogout = async () => {
         await signOut({ callbackUrl: '/login' });
     };
 
+    const isActive = (key: string) => {
+        // Exact match for specific routes that have children routes
+        if (key === '/dashboard/cong-dan') {
+            return pathname === key;
+        }
+        // For other routes, check exact match or prefix
+        return pathname === key || pathname.startsWith(key + '/');
+    };
+
+    const closeMobileMenu = () => {
+        if (isMobile && setMobileOpen) {
+            setMobileOpen(false);
+        }
+    };
+
+    // Desktop sidebar - always visible, not collapsible
+    if (!isMobile) {
+        return (
+            <aside
+                style={{
+                    width: 256,
+                    background: '#ffffff',
+                    borderRight: '1px solid var(--color-border)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    height: '100vh',
+                    position: 'fixed',
+                    left: 0,
+                    top: 0,
+                    zIndex: 1000,
+                }}
+            >
+                {/* Logo Section - 64px height like reference */}
+                <div style={{
+                    height: 64,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-start',
+                    padding: '0 20px',
+                    borderBottom: '1px solid var(--color-border)',
+                    gap: 5,
+                }}>
+                    <Image
+                        src="/images/logo.png"
+                        alt="PC01"
+                        width={40}
+                        height={40}
+                        style={{ objectFit: 'contain' }}
+                        priority
+                    />
+                    <span style={{ fontSize: 18, fontWeight: 700, color: '#0284c7', whiteSpace: 'nowrap' }}>PC01 SYSTEM</span>
+                </div>
+
+                {/* Navigation */}
+                <nav style={{
+                    flex: 1,
+                    padding: '16px 12px',
+                    overflowY: 'auto',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 4,
+                }}>
+                    {filteredMenuItems.map((item) => {
+                        if (item.children) {
+                            return (
+                                <details key={item.key} style={{ marginBottom: 4 }}>
+                                    <summary
+                                        className="nav-link"
+                                        style={{
+                                            cursor: 'pointer',
+                                            listStyle: 'none',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 12,
+                                        }}
+                                    >
+                                        {item.icon}
+                                        <span>{item.label}</span>
+                                    </summary>
+                                    <div style={{ paddingLeft: 32, marginTop: 4 }}>
+                                        {item.children.map((child: any) => (
+                                            <Link
+                                                key={child.key}
+                                                href={child.key}
+                                                className={isActive(child.key) ? 'nav-link-active' : 'nav-link'}
+                                                style={{ fontSize: 13, padding: '8px 12px' }}
+                                            >
+                                                {child.label}
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </details>
+                            );
+                        }
+
+                        return (
+                            <Link
+                                key={item.key}
+                                href={item.key}
+                                className={isActive(item.key) ? 'nav-link-active' : 'nav-link'}
+                            >
+                                {item.icon}
+                                <span>{item.label}</span>
+                            </Link>
+                        );
+                    })}
+                </nav>
+
+                {/* Footer */}
+                <div style={{
+                    padding: '12px',
+                    borderTop: '1px solid var(--color-border)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 4,
+                }}>
+                    <Link
+                        href="/dashboard/cai-dat"
+                        className={isActive('/dashboard/cai-dat') ? 'nav-link-active' : 'nav-link'}
+                    >
+                        <Settings size={20} />
+                        <span>Cài đặt</span>
+                    </Link>
+                    <button
+                        onClick={handleLogout}
+                        className="nav-link"
+                        style={{
+                            width: '100%',
+                            border: 'none',
+                            background: 'transparent',
+                            color: 'var(--color-error)',
+                            cursor: 'pointer',
+                        }}
+                    >
+                        <LogOut size={20} />
+                        <span>Đăng xuất</span>
+                    </button>
+                </div>
+            </aside>
+        );
+    }
+
+    // Mobile sidebar - overlay style
     return (
         <>
-            {/* Backdrop for mobile - click to close */}
-            {!collapsed && (
+            {/* Backdrop */}
+            {mobileOpen && (
                 <div
-                    className="sidebar-backdrop"
-                    onClick={() => setCollapsed(true)}
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        background: 'rgba(0, 0, 0, 0.3)',
+                        zIndex: 40,
+                    }}
+                    onClick={closeMobileMenu}
                 />
             )}
 
-            <Sider
-                className="custom-sidebar-white"
-                trigger={null}
-                theme="light"
-                collapsible
-                collapsed={collapsed}
-                collapsedWidth={isMobile ? 0 : 55}
-                width={260}
+            <aside
                 style={{
                     position: 'fixed',
                     left: 0,
-                    top: 55,
+                    top: 0,
                     bottom: 0,
-                    height: 'calc(100vh - 55px)',
-                    zIndex: 1000,
-                    // Mobile overlay behavior
-                    boxShadow: isMobile && !collapsed ? '4px 0 24px rgba(0, 0, 0, 0.15)' : '4px 0 16px rgba(0, 0, 0, 0.04)', // Light vertical shadow
-                    background: '#ffffff', // White background
-                    backdropFilter: 'none',
-                    borderRight: 'none', // Shadow handles separation
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    overflow: 'hidden',
+                    width: 280,
+                    background: '#ffffff',
+                    borderRight: '1px solid var(--color-border)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    zIndex: 50,
+                    transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)',
+                    transition: 'transform 0.3s ease',
+                    boxShadow: mobileOpen ? '4px 0 24px rgba(0, 0, 0, 0.15)' : 'none',
                 }}
             >
-                {/* Branding Section */}
+                {/* Logo Section */}
                 <div style={{
+                    height: 64,
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: collapsed ? 'center' : 'flex-start',
-                    padding: collapsed ? '12px 0' : '16px 24px',
-                    gap: 12,
-                    height: 64, // Fixed height for branding area
-                    transition: 'all 0.3s'
+                    justifyContent: 'flex-start',
+                    padding: '0 20px',
+                    borderBottom: '1px solid var(--color-border)',
+                    gap: 5,
                 }}>
-                    <div
-                        style={{
-                            width: 32,
-                            height: 32,
-                            borderRadius: 8,
-                            flexShrink: 0,
-                            position: 'relative'
-                        }}
-                    >
-                        <Image
-                            src="/images/logo.png"
-                            alt="Logo"
-                            fill
-                            style={{ objectFit: 'contain' }}
-                        />
-                    </div>
-
-                    {!collapsed && (
-                        <Text strong style={{
-                            fontSize: 18,
-                            color: '#1b5e20', // Main Green
-                            whiteSpace: 'nowrap',
-                            opacity: collapsed ? 0 : 1,
-                            transition: 'opacity 0.2s'
-                        }}>
-                            PC01 SYSTEM
-                        </Text>
-                    )}
+                    <Image
+                        src="/images/logo.png"
+                        alt="PC01"
+                        width={40}
+                        height={40}
+                        style={{ objectFit: 'contain' }}
+                        priority
+                    />
+                    <span style={{ fontSize: 18, fontWeight: 700, color: '#0284c7', whiteSpace: 'nowrap' }}>PC01 SYSTEM</span>
                 </div>
 
-                <Divider style={{ margin: '0 16px 12px 16px', minWidth: 'unset', width: 'auto' }} />
+                {/* Navigation */}
+                <nav style={{
+                    flex: 1,
+                    padding: '16px 12px',
+                    overflowY: 'auto',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 4,
+                }}>
+                    {filteredMenuItems.map((item) => {
+                        if (item.children) {
+                            return (
+                                <details key={item.key}>
+                                    <summary className="nav-link" style={{ cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center', gap: 12 }}>
+                                        {item.icon}
+                                        <span>{item.label}</span>
+                                    </summary>
+                                    <div style={{ paddingLeft: 32, marginTop: 4 }}>
+                                        {item.children.map((child: any) => (
+                                            <Link
+                                                key={child.key}
+                                                href={child.key}
+                                                className={isActive(child.key) ? 'nav-link-active' : 'nav-link'}
+                                                style={{ fontSize: 13, padding: '8px 12px' }}
+                                                onClick={closeMobileMenu}
+                                            >
+                                                {child.label}
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </details>
+                            );
+                        }
 
-
-
-                {/* Navigation Menu */}
-                <Menu
-                    mode="inline"
-                    selectedKeys={[pathname]}
-                    className="modern-sidebar-menu"
-                    style={{
-                        background: 'transparent',
-                        border: 'none',
-                        padding: '12px 8px',
-                        flex: 1,
-                    }}
-                    items={filteredMenuItems.map((item) => {
-                        // Helper to format item for Ant Menu
-                        const formatItem = (i: any): any => ({
-                            key: i.key,
-                            icon: i.icon ? <span style={{ fontSize: 20 }}>{i.icon}</span> : null,
-                            label: collapsed ? null : <span style={{ color: '#000000', fontWeight: 500 }}>{i.label}</span>,
-                            title: '',
-                            onClick: i.children ? undefined : () => handleMenuClick(i.key),
-                            children: i.children ? i.children.map(formatItem) : undefined
-                        });
-                        return formatItem(item);
+                        return (
+                            <Link
+                                key={item.key}
+                                href={item.key}
+                                className={isActive(item.key) ? 'nav-link-active' : 'nav-link'}
+                                onClick={closeMobileMenu}
+                            >
+                                {item.icon}
+                                <span>{item.label}</span>
+                            </Link>
+                        );
                     })}
-                />
+                </nav>
 
-                {/* Logout Button */}
-                <div
-                    style={{
-                        padding: collapsed ? '16px 0' : '16px',
-                        marginTop: 'auto', // Push to bottom
-                    }}
-                >
-                    <button
-                        onClick={handleLogout}
-                        title=""
-                        style={{
-                            width: collapsed ? 40 : '100%',
-                            height: collapsed ? 40 : 'auto',
-                            padding: collapsed ? 0 : '12px 16px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center', // Always center for consistency, or flex-start if expanded
-                            gap: 12,
-                            background: 'transparent',
-                            border: '1px solid rgba(0, 0, 0, 0.05)',
-                            borderRadius: collapsed ? '50%' : 10,
-                            margin: collapsed ? '0 auto' : 0,
-                            color: '#000000',
-                            cursor: 'pointer',
-                            fontSize: 14,
-                            transition: 'all 0.2s ease',
-                        }}
-                        className="logout-btn"
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.background = '#ffebee';
-                            e.currentTarget.style.color = '#d32f2f';
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.background = 'transparent';
-                            e.currentTarget.style.color = '#000000';
-                        }}
-                    >
-                        <LogoutOutlined style={{ fontSize: 20 }} />
-                        {!collapsed && <span>Đăng xuất</span>}
+                {/* Footer */}
+                <div style={{ padding: '12px', borderTop: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <Link href="/dashboard/cai-dat" className={isActive('/dashboard/cai-dat') ? 'nav-link-active' : 'nav-link'} onClick={closeMobileMenu}>
+                        <Settings size={20} />
+                        <span>Cài đặt</span>
+                    </Link>
+                    <button onClick={handleLogout} className="nav-link" style={{ width: '100%', border: 'none', background: 'transparent', color: 'var(--color-error)', cursor: 'pointer' }}>
+                        <LogOut size={20} />
+                        <span>Đăng xuất</span>
                     </button>
                 </div>
-            </Sider>
+            </aside>
         </>
     );
 }

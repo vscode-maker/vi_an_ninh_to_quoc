@@ -1,27 +1,31 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, message, Popconfirm, Tag } from 'antd';
-import { PlusOutlined, DeleteOutlined, EditOutlined, SaveOutlined } from '@ant-design/icons';
+import { useState } from 'react';
 import { createGroupZalo, updateGroupZalo, deleteGroupZalo } from '@/lib/group-zalo-actions';
+import { Table } from '@/app/ui/components/table';
+import { Button } from '@/app/ui/components/button';
+import { Modal } from '@/app/ui/components/modal';
+import { Input } from '@/app/ui/components/input';
+import { Tag } from '@/app/ui/components/tag';
+import { Plus, Trash2, Edit, Save } from 'lucide-react';
 
 export default function ZaloTable({ initialData }: any) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingRecord, setEditingRecord] = useState<any>(null);
-    const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
 
     const handleDelete = async (id: string) => {
+        if (!confirm('Xóa nhóm này?')) return;
         const result = await deleteGroupZalo(id);
-        if (result.success) message.success(result.message);
-        else message.error(result.message);
+        if (result.success) alert(result.message);
+        else alert(result.message);
     };
 
-    const onFinish = async (values: any) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
         setLoading(true);
-        const formData = new FormData();
-        Object.keys(values).forEach(key => { if (values[key]) formData.append(key, values[key]); });
+        const formData = new FormData(e.currentTarget);
 
         let result;
         if (editingRecord) {
@@ -31,11 +35,10 @@ export default function ZaloTable({ initialData }: any) {
         }
 
         if (result.success) {
-            message.success(result.message);
+            alert(result.message);
             setIsModalOpen(false);
-            form.resetFields();
         } else {
-            message.error(result.message);
+            alert(result.message);
         }
         setLoading(false);
     };
@@ -45,35 +48,44 @@ export default function ZaloTable({ initialData }: any) {
         setIsModalOpen(true);
     };
 
-    useEffect(() => {
-        if (!isModalOpen) return;
-        if (editingRecord) {
-            form.setFieldsValue(editingRecord);
-        } else {
-            form.resetFields();
-        }
-    }, [isModalOpen, editingRecord, form]);
-
     const columns = [
-        { title: 'ID Nhóm', dataIndex: 'groupId', key: 'groupId' },
+        { title: 'ID Nhóm', dataIndex: 'groupId', key: 'groupId', width: '15%' },
         { title: 'Tên Nhóm', dataIndex: 'name', key: 'name' },
         {
             title: 'Link Nhóm',
             dataIndex: 'groupLink',
             key: 'groupLink',
-            render: (text: string) => text ? <a href={text} target="_blank" rel="noreferrer">Tham gia</a> : '-'
+            render: (text: string) => text ? (
+                <a href={text} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
+                    Tham gia
+                </a>
+            ) : '-'
         },
         { title: 'Mô tả', dataIndex: 'groupDescription', key: 'groupDescription' },
-        { title: 'Trạng thái', dataIndex: 'status', render: (st: string) => <Tag color="success">{st}</Tag> },
+        {
+            title: 'Trạng thái',
+            dataIndex: 'status',
+            render: (st: string) => <Tag color="green">{st}</Tag>
+        },
         {
             title: 'Thao tác',
             key: 'action',
+            width: '120px',
             render: (_: any, record: any) => (
-                <div style={{ display: 'flex', gap: 8 }}>
-                    <Button icon={<EditOutlined />} size="small" onClick={() => openModal(record)} />
-                    <Popconfirm title="Xóa nhóm này?" onConfirm={() => handleDelete(record.groupId)}>
-                        <Button icon={<DeleteOutlined />} size="small" danger />
-                    </Popconfirm>
+                <div className="flex gap-2">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        icon={<Edit size={16} />}
+                        onClick={() => openModal(record)}
+                    />
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        icon={<Trash2 size={16} />}
+                        onClick={() => handleDelete(record.groupId)}
+                    />
                 </div>
             )
         }
@@ -81,39 +93,52 @@ export default function ZaloTable({ initialData }: any) {
 
     return (
         <div>
-            <div style={{ marginBottom: 16 }}>
-                <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal(null)}>Thêm nhóm Zalo</Button>
+            <div className="mb-4">
+                <Button icon={<Plus size={16} />} onClick={() => openModal(null)}>Thêm nhóm Zalo</Button>
             </div>
 
             <Table dataSource={initialData} columns={columns} rowKey="groupId" />
 
             <Modal
                 title={editingRecord ? "Cập nhật nhóm" : "Thêm nhóm Zalo"}
-                open={isModalOpen}
-                onCancel={() => setIsModalOpen(false)}
-                footer={null}
-                destroyOnHidden={true}
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
             >
-                <Form form={form} layout="vertical" onFinish={onFinish}>
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                     {!editingRecord && (
-                        <Form.Item name="groupId" label="ID Nhóm (Tùy chọn)">
-                            <Input placeholder="Để trống sẽ tự sinh" />
-                        </Form.Item>
+                        <Input
+                            name="groupId"
+                            label="ID Nhóm (Tùy chọn)"
+                            placeholder="Để trống sẽ tự sinh"
+                        />
                     )}
-                    <Form.Item name="name" label="Tên nhóm" rules={[{ required: true }]}>
-                        <Input />
-                    </Form.Item>
-                    <Form.Item name="groupLink" label="Link tham gia">
-                        <Input />
-                    </Form.Item>
-                    <Form.Item name="groupDescription" label="Mô tả">
-                        <Input.TextArea />
-                    </Form.Item>
-                    <div style={{ textAlign: 'right' }}>
-                        <Button onClick={() => setIsModalOpen(false)} style={{ marginRight: 8 }}>Hủy</Button>
-                        <Button type="primary" htmlType="submit" loading={loading} icon={<SaveOutlined />}>Lưu</Button>
+                    <Input
+                        name="name"
+                        label="Tên nhóm"
+                        defaultValue={editingRecord?.name}
+                        required
+                    />
+                    <Input
+                        name="groupLink"
+                        label="Link tham gia"
+                        defaultValue={editingRecord?.groupLink}
+                    />
+
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-sm font-medium text-gray-700">Mô tả</label>
+                        <textarea
+                            name="groupDescription"
+                            rows={3}
+                            className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-950"
+                            defaultValue={editingRecord?.groupDescription}
+                        />
                     </div>
-                </Form>
+
+                    <div className="flex justify-end gap-2 mt-4">
+                        <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Hủy</Button>
+                        <Button type="submit" loading={loading} icon={<Save size={16} />}>Lưu</Button>
+                    </div>
+                </form>
             </Modal>
         </div>
     );

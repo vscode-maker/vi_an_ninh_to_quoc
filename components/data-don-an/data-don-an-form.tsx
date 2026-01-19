@@ -2,10 +2,21 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Form, Input, Button, DatePicker, Select, Card, Row, Col, message } from 'antd';
+import { Form } from '@/app/ui/compat/antd-form-compat';
+import { Input } from '@/app/ui/components/input';
+import { Button } from '@/app/ui/components/button';
+import { DatePicker } from '@/app/ui/components/date-picker';
+import { Select } from '@/app/ui/components/select';
+import { Card } from '@/app/ui/components/card';
 import { useRouter } from 'next/navigation';
 import { createDataDonAn, updateDataDonAn } from '@/lib/actions/data-don-an';
 import dayjs from 'dayjs';
+import { TextArea } from '@/app/ui/components/textarea'; // Assuming we have or will treat TextArea as Input multiline or separate
+
+// Simple Toast fallback since we removed 'message' from antd
+const toast = (msg: string, type: 'success' | 'error' = 'success') => {
+    alert(`${type === 'success' ? '✅' : '❌'} ${msg}`);
+};
 
 interface Props {
     initialData?: any;
@@ -19,10 +30,9 @@ export default function DataDonAnForm({ initialData, isEdit = false }: Props) {
 
     // Helper to safety parse dates
     const parseDate = (dateStr: string) => {
-        if (!dateStr) return null;
-        // Try parsing assuming ISO or standard format.
+        if (!dateStr) return '';
         const d = dayjs(dateStr);
-        return d.isValid() ? d : null;
+        return d.isValid() ? d.format('YYYY-MM-DD') : '';
     };
 
     const initialValues = initialData ? {
@@ -36,25 +46,22 @@ export default function DataDonAnForm({ initialData, isEdit = false }: Props) {
         try {
             const payload = {
                 ...values,
-                // Convert dates back to string if needed, or keep as ISO depending on DB
-                // Our DB fields are String based on schema (from CSV).
-                // So we format generic string YYYY-MM-DD or DD/MM/YYYY.
-                // Seed data uses Strings. Let's try ISO string for consistency or whatever was imported.
-                ngayXayRa: values.ngayXayRa ? values.ngayXayRa.toISOString() : null,
-                ngayTiepNhan: values.ngayTiepNhan ? values.ngayTiepNhan.toISOString() : null,
+                // Dates from native input are usually YYYY-MM-DD strings already
+                ngayXayRa: values.ngayXayRa || null,
+                ngayTiepNhan: values.ngayTiepNhan || null,
             };
 
             if (isEdit && initialData?.id) {
                 await updateDataDonAn(initialData.id, payload);
-                message.success('Cập nhật thành công');
+                toast('Cập nhật thành công');
             } else {
                 await createDataDonAn(payload);
-                message.success('Thêm mới thành công');
+                toast('Thêm mới thành công');
             }
             router.push('/dashboard/data-don-an');
             router.refresh();
         } catch (error) {
-            message.error('Có lỗi xảy ra: ' + (error as Error).message);
+            toast('Có lỗi xảy ra: ' + (error as Error).message, 'error');
         } finally {
             setLoading(false);
         }
@@ -64,84 +71,66 @@ export default function DataDonAnForm({ initialData, isEdit = false }: Props) {
         <Card title={isEdit ? "Cập nhật Đơn án" : "Thêm mới Đơn án"}>
             <Form
                 form={form}
-                layout="vertical"
                 initialValues={initialValues}
                 onFinish={onFinish}
+                className="space-y-4"
             >
-                <Row gutter={16}>
-                    <Col span={12}>
-                        <Form.Item name="noiDung" label="Nội dung chính" rules={[{ required: true }]}>
-                            <Input.TextArea rows={4} />
-                        </Form.Item>
-                    </Col>
-                    <Col span={12}>
-                        <Form.Item name="trichYeu" label="Trích yếu">
-                            <Input.TextArea rows={4} />
-                        </Form.Item>
-                    </Col>
-                </Row>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Form.Item name="noiDung" label="Nội dung chính">
+                        <TextArea rows={4} />
+                    </Form.Item>
+                    <Form.Item name="trichYeu" label="Trích yếu">
+                        <TextArea rows={4} />
+                    </Form.Item>
+                </div>
 
-                <Row gutter={16}>
-                    <Col span={8}>
-                        <Form.Item name="phanLoai" label="Phân loại">
-                            <Input />
-                        </Form.Item>
-                    </Col>
-                    <Col span={8}>
-                        <Form.Item name="trangThai" label="Trạng thái">
-                            <Select>
-                                <Select.Option value="Đang thụ lý">Đang thụ lý</Select.Option>
-                                <Select.Option value="Đã giải quyết">Đã giải quyết</Select.Option>
-                                <Select.Option value="Tạm đình chỉ">Tạm đình chỉ</Select.Option>
-                            </Select>
-                        </Form.Item>
-                    </Col>
-                    <Col span={8}>
-                        <Form.Item name="donViThuLyChinh" label="Đơn vị thụ lý">
-                            <Input />
-                        </Form.Item>
-                    </Col>
-                </Row>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Form.Item name="phanLoai" label="Phân loại">
+                        <Input />
+                    </Form.Item>
+                    <Form.Item name="trangThai" label="Trạng thái">
+                        <Select
+                            options={[
+                                { label: 'Đang thụ lý', value: 'Đang thụ lý' },
+                                { label: 'Đã giải quyết', value: 'Đã giải quyết' },
+                                { label: 'Tạm đình chỉ', value: 'Tạm đình chỉ' }
+                            ]}
+                        />
+                    </Form.Item>
+                    <Form.Item name="donViThuLyChinh" label="Đơn vị thụ lý">
+                        <Input />
+                    </Form.Item>
+                </div>
 
-                <Row gutter={16}>
-                    <Col span={8}>
-                        <Form.Item name="ngayXayRa" label="Ngày xảy ra">
-                            <DatePicker style={{ width: '100%' }} />
-                        </Form.Item>
-                    </Col>
-                    <Col span={8}>
-                        <Form.Item name="ngayTiepNhan" label="Ngày tiếp nhận">
-                            <DatePicker style={{ width: '100%' }} />
-                        </Form.Item>
-                    </Col>
-                    <Col span={8}>
-                        <Form.Item name="noiXayRa" label="Nơi xảy ra">
-                            <Input />
-                        </Form.Item>
-                    </Col>
-                </Row>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Form.Item name="ngayXayRa" label="Ngày xảy ra">
+                        <DatePicker />
+                    </Form.Item>
+                    <Form.Item name="ngayTiepNhan" label="Ngày tiếp nhận">
+                        <DatePicker />
+                    </Form.Item>
+                    <Form.Item name="noiXayRa" label="Nơi xảy ra">
+                        <Input />
+                    </Form.Item>
+                </div>
 
-                <Row gutter={16}>
-                    <Col span={12}>
-                        <Form.Item name="hinhThucGiaiQuyet" label="Hình thức giải quyết">
-                            <Input />
-                        </Form.Item>
-                    </Col>
-                    <Col span={12}>
-                        <Form.Item name="ghiChu" label="Ghi chú">
-                            <Input />
-                        </Form.Item>
-                    </Col>
-                </Row>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Form.Item name="hinhThucGiaiQuyet" label="Hình thức giải quyết">
+                        <Input />
+                    </Form.Item>
+                    <Form.Item name="ghiChu" label="Ghi chú">
+                        <Input />
+                    </Form.Item>
+                </div>
 
-                <Form.Item>
-                    <Button type="primary" htmlType="submit" loading={loading} style={{ marginRight: 8 }}>
+                <div className="flex gap-2 pt-4 border-t border-gray-100">
+                    <Button type="submit" loading={loading}>
                         {isEdit ? 'Cập nhật' : 'Thêm mới'}
                     </Button>
-                    <Button onClick={() => router.back()}>
+                    <Button variant="secondary" onClick={() => router.back()} type="button">
                         Hủy bỏ
                     </Button>
-                </Form.Item>
+                </div>
             </Form>
         </Card>
     );

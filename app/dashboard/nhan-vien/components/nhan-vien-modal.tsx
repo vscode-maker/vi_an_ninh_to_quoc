@@ -2,29 +2,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Modal, Form, Input, Select, Button, message } from 'antd';
-import { SaveOutlined } from '@ant-design/icons';
 import { createUser, updateUser } from '@/lib/user-actions';
+import { Modal } from '@/app/ui/components/modal';
+import { Button } from '@/app/ui/components/button';
+import { Input } from '@/app/ui/components/input';
+import { Save } from 'lucide-react';
 
 export default function NhanVienModal({ open, onCancel, record }: any) {
-    const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        if (!open) return;
-        if (record) {
-            form.setFieldsValue(record);
-        } else {
-            form.resetFields();
-        }
-    }, [record, form, open]);
-
-    const onFinish = async (values: any) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
         setLoading(true);
-        const formData = new FormData();
-        Object.keys(values).forEach(key => {
-            if (values[key]) formData.append(key, values[key]);
-        });
+        const formData = new FormData(e.currentTarget);
 
         let result;
         if (record) {
@@ -34,10 +24,10 @@ export default function NhanVienModal({ open, onCancel, record }: any) {
         }
 
         if (result.success) {
-            message.success(result.message);
+            alert(result.message);
             onCancel();
         } else {
-            message.error(result.message);
+            alert(result.message);
         }
         setLoading(false);
     };
@@ -45,38 +35,63 @@ export default function NhanVienModal({ open, onCancel, record }: any) {
     return (
         <Modal
             title={record ? "Cập nhật nhân viên" : "Thêm nhân viên mới"}
-            open={open}
-            onCancel={onCancel}
-            footer={null}
-            destroyOnHidden={true}
+            isOpen={open}
+            onClose={onCancel}
         >
-            <Form form={form} layout="vertical" onFinish={onFinish}>
-                <Form.Item name="soHieu" label="Số hiệu (ID)" rules={[{ required: true }]}>
-                    <Input placeholder="VD: 123456" disabled={!!record} />
-                </Form.Item>
-                <Form.Item name="fullName" label="Họ và tên" rules={[{ required: true }]}>
-                    <Input placeholder="Nhập họ tên" />
-                </Form.Item>
-                <Form.Item name="password" label={record ? "Mật khẩu mới (Để trống nếu không đổi)" : "Mật khẩu"} rules={[{ required: !record }]}>
-                    <Input.Password placeholder="Nhập mật khẩu" />
-                </Form.Item>
-                <Form.Item name="role" label="Vai trò" initialValue="user">
-                    <Select>
-                        <Select.Option value="user">User</Select.Option>
-                        <Select.Option value="admin">Admin</Select.Option>
-                    </Select>
-                </Form.Item>
-                <Form.Item name="position" label="Chức vụ">
-                    <Input placeholder="Chức vụ" />
-                </Form.Item>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                <Input
+                    name="soHieu"
+                    label="Số hiệu (ID)"
+                    placeholder="VD: 123456"
+                    title="Số hiệu (ID)"
+                    required
+                    defaultValue={record?.soHieu}
+                    disabled={!!record}
+                />
+                <Input
+                    name="fullName"
+                    label="Họ và tên"
+                    placeholder="Nhập họ tên"
+                    title="Họ và tên"
+                    required
+                    defaultValue={record?.fullName}
+                />
+                <Input
+                    type="password"
+                    name="password"
+                    label={record ? "Mật khẩu mới (Để trống nếu không đổi)" : "Mật khẩu"}
+                    placeholder="Nhập mật khẩu"
+                    title="Mật khẩu"
+                    required={!record}
+                />
 
-                <div style={{ textAlign: 'right' }}>
-                    <Button onClick={onCancel} style={{ marginRight: 8 }}>Hủy</Button>
-                    <Button type="primary" htmlType="submit" loading={loading} icon={<SaveOutlined />}>
+                <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-medium text-gray-700">Vai trò</label>
+                    <select
+                        name="role"
+                        className="h-9 w-full rounded-md border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-950 disabled:cursor-not-allowed disabled:opacity-50"
+                        defaultValue={record?.role || 'user'}
+                    >
+                        <option value="user">User</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+
+                <Input
+                    name="position"
+                    label="Chức vụ"
+                    placeholder="Chức vụ"
+                    title="Chức vụ"
+                    defaultValue={record?.position}
+                />
+
+                <div className="flex justify-end gap-2 mt-4">
+                    <Button type="button" variant="ghost" onClick={onCancel}>Hủy</Button>
+                    <Button type="submit" loading={loading} icon={<Save size={16} />}>
                         {record ? 'Cập nhật' : 'Lưu mới'}
                     </Button>
                 </div>
-            </Form>
+            </form>
         </Modal>
     );
 }

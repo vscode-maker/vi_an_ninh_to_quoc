@@ -1,9 +1,11 @@
 'use client';
 
-import { useActionState, startTransition, useEffect, useState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import { authenticate } from '@/lib/actions';
-import { Button, Form, Input, Alert, Card } from 'antd';
-import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import { Button } from '@/app/ui/components/button';
+import { Input } from '@/app/ui/components/input';
+import { Card } from '@/app/ui/components/card';
+import { User, Lock, AlertCircle } from 'lucide-react';
 
 export default function LoginForm() {
     const [errorMessage, dispatch, isPending] = useActionState(authenticate, undefined);
@@ -13,17 +15,7 @@ export default function LoginForm() {
         setIsMounted(true);
     }, []);
 
-    const onFinish = (values: any) => {
-        const formData = new FormData();
-        formData.append('soHieu', values.soHieu);
-        formData.append('password', values.password);
-
-        startTransition(() => {
-            dispatch(formData);
-        });
-    };
-
-    if (!isMounted) return null; // Avoid hydration mismatch from extensions
+    if (!isMounted) return null;
 
     return (
         <div style={{
@@ -32,16 +24,16 @@ export default function LoginForm() {
             justifyContent: 'center',
             alignItems: 'center',
             minHeight: '100vh',
-            background: '#f0f2f5', // Clean, corporate light grey/white background
+            background: '#f0f2f5',
             position: 'relative'
         }}>
             <Card
-                style={{ width: 400, border: 'none', borderRadius: 16, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}
-                styles={{ body: { padding: 0 } }}
+                className="w-[400px] border-none !p-0 overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.08)]"
+                bodyStyle={{ padding: 0 }}
             >
                 {/* Green Header */}
                 <div style={{
-                    background: '#2e7d32', // Forest Green
+                    background: '#2e7d32',
                     padding: '32px 24px',
                     textAlign: 'center',
                     color: '#fff'
@@ -57,7 +49,6 @@ export default function LoginForm() {
                         justifyContent: 'center',
                         boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
                     }}>
-                        {/* Ensure logo path is correct relative to public */}
                         <img src="/images/logo.png" alt="Logo" width={50} height={50} style={{ objectFit: 'contain' }} />
                     </div>
                     <h2 style={{ margin: 0, fontSize: 24, fontWeight: 'bold', textTransform: 'uppercase' }}>ĐĂNG NHẬP</h2>
@@ -66,65 +57,62 @@ export default function LoginForm() {
 
                 {/* Form Body */}
                 <div style={{ padding: '32px 24px' }}>
-                    <Form
-                        name="login_form"
-                        initialValues={{ remember: true }}
-                        onFinish={onFinish}
-                        layout="vertical"
-                        size="large"
-                    >
-                        <Form.Item
-                            label={<span style={{ fontWeight: 600 }}>Số Hiệu</span>}
-                            name="soHieu"
-                            rules={[{ required: true, message: 'Vui lòng nhập số hiệu!' }]}
-                        >
-                            <Input
-                                prefix={<UserOutlined style={{ color: '#aaa' }} />}
-                                placeholder="Nhập số hiệu..."
-                                style={{ borderRadius: 8 }}
-                                autoComplete="username"
-                            />
-                        </Form.Item>
+                    <form action={dispatch} className="flex flex-col gap-5">
+                        <div className="space-y-1">
+                            <label className="block text-sm font-semibold mb-1">Số Hiệu</label>
+                            <div className="relative">
+                                <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                    <User size={16} />
+                                </span>
+                                <Input
+                                    name="soHieu"
+                                    placeholder="Nhập số hiệu..."
+                                    className="pl-10"
+                                    required
+                                    autoComplete="username"
+                                />
+                            </div>
+                        </div>
 
-                        <Form.Item
-                            label={<span style={{ fontWeight: 600 }}>Mật Khẩu</span>}
-                            name="password"
-                            rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
-                        >
-                            <Input.Password
-                                prefix={<LockOutlined style={{ color: '#aaa' }} />}
-                                placeholder="Nhập mật khẩu..."
-                                style={{ borderRadius: 8 }}
-                                autoComplete="current-password"
-                            />
-                        </Form.Item>
+                        <div className="space-y-1">
+                            <label className="block text-sm font-semibold mb-1">Mật Khẩu</label>
+                            <div className="relative">
+                                <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                    <Lock size={16} />
+                                </span>
+                                <Input
+                                    type="password"
+                                    name="password"
+                                    placeholder="Nhập mật khẩu..."
+                                    className="pl-10"
+                                    required
+                                    autoComplete="current-password"
+                                />
+                            </div>
+                        </div>
 
                         {errorMessage && (
-                            <Form.Item>
-                                <Alert title={<span style={{ fontWeight: 600 }}>Lỗi đăng nhập</span>} description={errorMessage} type="error" showIcon style={{ borderRadius: 8 }} />
-                            </Form.Item>
+                            <div className="flex items-center gap-2 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg">
+                                <AlertCircle size={16} />
+                                <span>{errorMessage}</span>
+                            </div>
                         )}
 
-                        <Form.Item style={{ marginBottom: 0, marginTop: 16 }}>
+                        <div className="mt-2">
                             <Button
-                                type="primary"
-                                htmlType="submit"
-                                block
+                                type="submit"
+                                variant="primary"
                                 loading={isPending}
+                                className="w-full h-12 text-lg font-bold shadow-lg"
                                 style={{
-                                    background: '#2e7d32', // Match header green
+                                    background: '#2e7d32',
                                     borderColor: '#2e7d32',
-                                    height: 48,
-                                    fontSize: 16,
-                                    fontWeight: 'bold',
-                                    borderRadius: 8,
-                                    boxShadow: '0 4px 12px rgba(46, 125, 50, 0.3)'
                                 }}
                             >
                                 Đăng Nhập
                             </Button>
-                        </Form.Item>
-                    </Form>
+                        </div>
+                    </form>
                 </div>
             </Card>
 

@@ -1,8 +1,9 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Tabs, Descriptions, Card, Table, Empty } from 'antd';
+import { Tabs } from '@/app/ui/compat/tabs-compat';
+import { Card } from '@/app/ui/components/card';
+import { Table } from '@/app/ui/components/table';
 import { getRelatedEntityByDataDonAnId } from '@/lib/actions/csv-entities';
 
 interface Props {
@@ -10,19 +11,16 @@ interface Props {
 }
 
 const DataDonAnDetailTabs: React.FC<Props> = ({ data }) => {
-    const [activeTab, setActiveTab] = useState('1');
-
-    // We could fetch related data Server Side and pass it in, 
-    // OR fetch Client Side on tab change.
-    // Given potential size, client fetch on demand is better for performance.
-    // But for simple verification, passing everything or fetching simple is ok.
-    // Let's implement Client Fetching for a related list as a POC.
+    // Tabs compat uses internal state or controlled. It supports onChange.
+    // The compat component I saw earlier uses internal state if defaultActiveKey provided, or can be controlled?
+    // Let's check compat: It has `activeKey` prop but uses internal `state` derived from `defaultActiveKey`? 
+    // Actually the compat code I saw: `const [activeKey, setActiveKey] = useState(defaultActiveKey || items[0]?.key);`
+    // It DOES NOT synchronize with `activeKey` prop if it changes potentially.
+    // But here we just need simple tabs works.
 
     return (
         <Card>
             <Tabs
-                activeKey={activeTab}
-                onChange={setActiveTab}
                 items={[
                     {
                         key: '1',
@@ -39,7 +37,6 @@ const DataDonAnDetailTabs: React.FC<Props> = ({ data }) => {
                         label: 'Vật chứng',
                         children: <RelatedList model="thongTinVatChung" dataDonAnId={data.id} />,
                     },
-                    // Add more tabs for other relations
                 ]}
             />
         </Card>
@@ -47,16 +44,28 @@ const DataDonAnDetailTabs: React.FC<Props> = ({ data }) => {
 };
 
 const GeneralInfo = ({ data }: { data: any }) => (
-    <Descriptions bordered column={1}>
-        <Descriptions.Item label="ID">{data.id}</Descriptions.Item>
-        <Descriptions.Item label="Phân loại">{data.phanLoai}</Descriptions.Item>
-        <Descriptions.Item label="Trích yếu">{data.trichYeu}</Descriptions.Item>
-        <Descriptions.Item label="Nội dung">{data.noiDung}</Descriptions.Item>
-        <Descriptions.Item label="Ngày xảy ra">{data.ngayXayRa}</Descriptions.Item>
-        <Descriptions.Item label="Nơi xảy ra">{data.noiXayRa}</Descriptions.Item>
-        <Descriptions.Item label="Trạng thái">{data.trangThai}</Descriptions.Item>
-        <Descriptions.Item label="Cảnh báo tiến độ">{data.canhBaoTienDo}</Descriptions.Item>
-    </Descriptions>
+    <div className="border border-gray-200 rounded-lg overflow-hidden">
+        <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-200 bg-white">
+            <DescriptionItem label="ID" value={data.id} />
+            {/* Use full width for some or just grid flow */}
+        </div>
+        <div className="divide-y divide-gray-200 border-t border-gray-200">
+            <DescriptionItem label="Phân loại" value={data.phanLoai} />
+            <DescriptionItem label="Trích yếu" value={data.trichYeu} />
+            <DescriptionItem label="Nội dung" value={data.noiDung} />
+            <DescriptionItem label="Ngày xảy ra" value={data.ngayXayRa} />
+            <DescriptionItem label="Nơi xảy ra" value={data.noiXayRa} />
+            <DescriptionItem label="Trạng thái" value={data.trangThai} />
+            <DescriptionItem label="Cảnh báo tiến độ" value={data.canhBaoTienDo} />
+        </div>
+    </div>
+);
+
+const DescriptionItem = ({ label, value }: { label: string, value: React.ReactNode }) => (
+    <div className="grid grid-cols-3 gap-4 px-6 py-4 hover:bg-gray-50 transition-colors">
+        <dt className="text-sm font-medium text-gray-500 col-span-1">{label}</dt>
+        <dd className="text-sm text-gray-900 col-span-2 sm:col-span-2 block break-words">{value || '-'}</dd>
+    </div>
 );
 
 // Generic Related List Component
@@ -71,23 +80,20 @@ const RelatedList = ({ model, dataDonAnId }: { model: string, dataDonAnId: strin
             .finally(() => setLoading(false));
     }, [model, dataDonAnId]);
 
-    // Define columns dynamically or simple JSON dump for now?
-    // Start with JSON dump or simple generic table.
-    // Ideally specific columns per model.
-    // User wants "Modules"...
-    // I will auto-generate columns from keys of first item if available.
-
     const columns = list.length > 0 ? Object.keys(list[0]).map(key => ({
         title: key,
         dataIndex: key,
         key: key,
-        ellipsis: true
-    })).slice(0, 5) : []; // Limit to 5 columns for safety
+    })).slice(0, 5) : [];
 
-    if (loading) return <div>Loading...</div>;
-    if (list.length === 0) return <Empty description="Không có dữ liệu" />;
+    if (loading) return <div className="p-4 text-center text-gray-500">Loading...</div>;
+    if (list.length === 0) return <div className="p-8 text-center text-gray-500 border border-gray-100 rounded-lg bg-gray-50">Không có dữ liệu</div>;
 
-    return <Table dataSource={list} columns={columns} pagination={false} rowKey="id" scroll={{ x: true }} />;
+    return (
+        <div className="overflow-hidden border border-gray-200 rounded-lg">
+            <Table dataSource={list} columns={columns} pagination={{ pageSize: 5 }} rowKey="id" />
+        </div>
+    );
 };
 
 export default DataDonAnDetailTabs;

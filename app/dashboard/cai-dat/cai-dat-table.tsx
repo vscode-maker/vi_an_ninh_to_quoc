@@ -1,27 +1,30 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, message, Popconfirm, Tag } from 'antd';
-import { PlusOutlined, DeleteOutlined, EditOutlined, SaveOutlined } from '@ant-design/icons';
+import { useState } from 'react';
 import { createSetting, updateSetting, deleteSetting } from '@/lib/setting-actions';
+import { Table } from '@/app/ui/components/table';
+import { Button } from '@/app/ui/components/button';
+import { Modal } from '@/app/ui/components/modal';
+import { Input } from '@/app/ui/components/input';
+import { Plus, Trash2, Edit, Save } from 'lucide-react';
 
 export default function CaiDatTable({ initialData }: any) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingRecord, setEditingRecord] = useState<any>(null);
-    const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
 
     const handleDelete = async (id: number) => {
+        if (!confirm('Xóa cài đặt này?')) return;
         const result = await deleteSetting(id);
-        if (result.success) message.success(result.message);
-        else message.error(result.message);
+        if (result.success) alert(result.message);
+        else alert(result.message);
     };
 
-    const onFinish = async (values: any) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
         setLoading(true);
-        const formData = new FormData();
-        Object.keys(values).forEach(key => { if (values[key]) formData.append(key, values[key]); });
+        const formData = new FormData(e.currentTarget);
 
         let result;
         if (editingRecord) {
@@ -31,11 +34,10 @@ export default function CaiDatTable({ initialData }: any) {
         }
 
         if (result.success) {
-            message.success(result.message);
+            alert(result.message);
             setIsModalOpen(false);
-            form.resetFields();
         } else {
-            message.error(result.message);
+            alert(result.message);
         }
         setLoading(false);
     };
@@ -45,28 +47,33 @@ export default function CaiDatTable({ initialData }: any) {
         setIsModalOpen(true);
     };
 
-    useEffect(() => {
-        if (!isModalOpen) return;
-        if (editingRecord) {
-            form.setFieldsValue(editingRecord);
-        } else {
-            form.resetFields();
-        }
-    }, [isModalOpen, editingRecord, form]);
-
     const columns = [
-        { title: 'Loại (Type)', dataIndex: 'type', key: 'type', width: 200 },
-        { title: 'Giá trị (Value)', dataIndex: 'value', key: 'value', ellipsis: true },
+        { title: 'Loại (Type)', dataIndex: 'type', key: 'type', width: '20%' },
+        {
+            title: 'Giá trị (Value)',
+            dataIndex: 'value',
+            key: 'value',
+            render: (text: string) => <div className="truncate max-w-md" title={text}>{text}</div>
+        },
         {
             title: 'Thao tác',
             key: 'action',
-            width: 150,
+            width: '150px',
             render: (_: any, record: any) => (
-                <div style={{ display: 'flex', gap: 8 }}>
-                    <Button icon={<EditOutlined />} size="small" onClick={() => openModal(record)} />
-                    <Popconfirm title="Xóa cài đặt này?" onConfirm={() => handleDelete(record.id)}>
-                        <Button icon={<DeleteOutlined />} size="small" danger />
-                    </Popconfirm>
+                <div className="flex gap-2">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        icon={<Edit size={16} />}
+                        onClick={() => openModal(record)}
+                    />
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        icon={<Trash2 size={16} />}
+                        onClick={() => handleDelete(record.id)}
+                    />
                 </div>
             )
         }
@@ -74,31 +81,44 @@ export default function CaiDatTable({ initialData }: any) {
 
     return (
         <div>
-            <div style={{ marginBottom: 16 }}>
-                <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal(null)}>Thêm cấu hình</Button>
+            <div className="mb-4">
+                <Button icon={<Plus size={16} />} onClick={() => openModal(null)}>Thêm cấu hình</Button>
             </div>
 
             <Table dataSource={initialData} columns={columns} rowKey="id" />
 
             <Modal
                 title={editingRecord ? "Cập nhật cấu hình" : "Thêm cấu hình"}
-                open={isModalOpen}
-                onCancel={() => setIsModalOpen(false)}
-                footer={null}
-                destroyOnHidden={true}
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
             >
-                <Form form={form} layout="vertical" onFinish={onFinish}>
-                    <Form.Item name="type" label="Loại (Key)" rules={[{ required: true }]}>
-                        <Input placeholder="VD: SYSTEM_COLOR, API_KEY..." disabled={!!editingRecord} />
-                    </Form.Item>
-                    <Form.Item name="value" label="Giá trị" rules={[{ required: true }]}>
-                        <Input.TextArea rows={4} />
-                    </Form.Item>
-                    <div style={{ textAlign: 'right' }}>
-                        <Button onClick={() => setIsModalOpen(false)} style={{ marginRight: 8 }}>Hủy</Button>
-                        <Button type="primary" htmlType="submit" loading={loading} icon={<SaveOutlined />}>Lưu</Button>
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                    <Input
+                        name="type"
+                        label="Loại (Key)"
+                        placeholder="VD: SYSTEM_COLOR, API_KEY..."
+                        defaultValue={editingRecord?.type}
+                        disabled={!!editingRecord}
+                        required
+                    />
+
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-sm font-medium text-gray-700">Giá trị</label>
+                        <textarea
+                            name="value"
+                            rows={4}
+                            className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-950 disabled:cursor-not-allowed disabled:opacity-50"
+                            placeholder="Nhập giá trị..."
+                            defaultValue={editingRecord?.value}
+                            required
+                        />
                     </div>
-                </Form>
+
+                    <div className="flex justify-end gap-2 mt-4">
+                        <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Hủy</Button>
+                        <Button type="submit" loading={loading} icon={<Save size={16} />}>Lưu</Button>
+                    </div>
+                </form>
             </Modal>
         </div>
     );

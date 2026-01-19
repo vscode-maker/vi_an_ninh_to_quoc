@@ -1,0 +1,48 @@
+﻿+-----------------------------------------------------------------------------------------+
+|  TARGET: PC01 Management - RECOMMENDED DESIGN SYSTEM                                    |
++-----------------------------------------------------------------------------------------+
+|                                                                                          |
+|  PATTERN: Minimal Single Column                                                         |
+|     Conversion: Single CTA focus. Large typography. Lots of whitespace. No nav clutter. Mobile-first.|
+|     CTA: Center, large CTA button                                                       |
+|     Sections:                                                                           |
+|       1. 1. Hero headline, 2. Short description, 3. Benefit bullets (3 max), 4. CTA, 5. Footer|
+|                                                                                          |
+|  STYLE: Trust & Authority                                                               |
+|     Keywords: Certificates/badges displayed, expert credentials, case studies with      |
+|     metrics, before/after comparisons, industry recognition, security badges            |
+|     Best For: Healthcare/medical landing pages, financial services, enterprise          |
+|     software, premium/luxury products, legal services                                   |
+|     Performance: ÔÜí Excellent | Accessibility: Ô£ô WCAG AAA                                |
+|                                                                                          |
+|  COLORS:                                                                                |
+|     Primary:    #1E3A8A                                                                 |
+|     Secondary:  #1E40AF                                                                 |
+|     CTA:        #B45309                                                                 |
+|     Background: #F8FAFC                                                                 |
+|     Text:       #0F172A                                                                 |
+|     Notes: Navy Blue (#1E3A5F) + Gold + White                                           |
+|                                                                                          |
+|  TYPOGRAPHY: EB Garamond / Lato                                                         |
+|     Mood: legal, professional, traditional, trustworthy, formal, authoritative          |
+|     Best For: Law firms, legal services, contracts, formal documents, government        |
+|     Google Fonts: https://fonts.google.com/share?selection.family=EB+Garamond:wght@400;500;600;700|Lato:wght@300;400;700|
+|     CSS Import: @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght...|
+|                                                                                          |
+|  KEY EFFECTS:                                                                           |
+|     Badge hover effects, metric pulse animations, certificate carousel, smooth stat     |
+|     reveal                                                                              |
+|                                                                                          |
+|  AVOID (Anti-patterns):                                                                 |
+|     Outdated design + Hidden credentials + AI purple/pink gradients                     |
+|                                                                                          |
+|  PRE-DELIVERY CHECKLIST:                                                                |
+|     [ ] No emojis as icons (use SVG: Heroicons/Lucide)                                  |
+|     [ ] cursor-pointer on all clickable elements                                        |
+|     [ ] Hover states with smooth transitions (150-300ms)                                |
+|     [ ] Light mode: text contrast 4.5:1 minimum                                         |
+|     [ ] Focus states visible for keyboard nav                                           |
+|     [ ] prefers-reduced-motion respected                                                |
+|     [ ] Responsive: 375px, 768px, 1024px, 1440px                                        |
+|                                                                                          |
++-----------------------------------------------------------------------------------------+
