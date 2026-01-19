@@ -150,7 +150,10 @@ model GroupZalo {
   @@map("group_zalo")
 }
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 5c9e8ae (Fix import path and update tasks)
 model Permission {
   code        String  @id @map("code")
   name        String  @map("name")
@@ -159,6 +162,7 @@ model Permission {
 
   @@map("permissions")
 }
+<<<<<<< HEAD
 
 // --- NEW MODULES FROM CSV ---
 
@@ -429,3 +433,5 @@ model ThongTinChat {
 
   @@map("thong_tin_chat")
 }
+=======
+>>>>>>> 5c9e8ae (Fix import path and update tasks)

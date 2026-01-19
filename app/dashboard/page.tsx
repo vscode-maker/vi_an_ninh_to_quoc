@@ -1,5 +1,5 @@
 import { fetchTasks } from '@/lib/data';
-import KanbanBoard from '@/app/ui/dashboard/kanban-board-optimized';
+import KanbanBoard from '@/app/ui/dashboard/kanban-board';
 
 export default async function DashboardPage(props: {
     searchParams?: Promise<{

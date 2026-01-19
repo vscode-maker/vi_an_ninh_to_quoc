@@ -14,10 +14,14 @@ import {
     SafetyCertificateOutlined,
     UserOutlined,
     MessageOutlined,
+<<<<<<< HEAD
     FileTextOutlined,
     SolutionOutlined,
     BookOutlined,
     AppstoreOutlined
+=======
+    FileTextOutlined
+>>>>>>> 5c9e8ae (Fix import path and update tasks)
 } from '@ant-design/icons';
 import { usePathname, useRouter } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
@@ -49,6 +53,7 @@ export default function SideNav({ collapsed, setCollapsed, isMobile = false }: S
             label: 'Công việc',
         },
         {
+<<<<<<< HEAD
             key: '/dashboard/data-don-an',
             icon: <SolutionOutlined />,
             label: 'Quản lý Đơn án',
@@ -80,6 +85,8 @@ export default function SideNav({ collapsed, setCollapsed, isMobile = false }: S
             label: 'Tra cứu Bộ Luật',
         },
         {
+=======
+>>>>>>> 5c9e8ae (Fix import path and update tasks)
             key: '/dashboard/nhan-vien',
             icon: <UserOutlined />,
             label: 'Nhân viên',
@@ -117,6 +124,7 @@ export default function SideNav({ collapsed, setCollapsed, isMobile = false }: S
         '/dashboard/tai-lieu': 'VIEW_FILE',
         '/dashboard/phan-quyen': 'VIEW_USER',
         '/dashboard/cai-dat': 'VIEW_SETTING',
+<<<<<<< HEAD
         // New Modules
         '/dashboard/data-don-an': 'VIEW_DATA_DON_AN',
         '/dashboard/bo-luat': 'VIEW_BO_LUAT',
@@ -168,6 +176,24 @@ export default function SideNav({ collapsed, setCollapsed, isMobile = false }: S
     };
 
     const filteredMenuItems = filterItems(menuItems);
+=======
+    };
+
+    const filteredMenuItems = menuItems.filter(item => {
+        const user = session?.user as any;
+        // Admin or MANAGE_SYSTEM sees everything
+        if (user?.role === 'admin' || user?.permissions?.includes('MANAGE_SYSTEM')) return true;
+
+        const requiredPerm = PERMISSION_MAPPING[item.key];
+        // If no permission required (e.g. dashboard home), show it? 
+        // Our Dashboard home isn't in this list, but spread items logic relies on key.
+        if (!requiredPerm) return true;
+
+        // Check user permissions
+        const userPerms = user?.permissions || [];
+        return userPerms.includes(requiredPerm);
+    });
+>>>>>>> 5c9e8ae (Fix import path and update tasks)
 
     const handleMenuClick = (key: string) => {
         router.push(key);
@@ -270,6 +296,7 @@ export default function SideNav({ collapsed, setCollapsed, isMobile = false }: S
                         padding: '12px 8px',
                         flex: 1,
                     }}
+<<<<<<< HEAD
                     items={filteredMenuItems.map((item) => {
                         // Helper to format item for Ant Menu
                         const formatItem = (i: any): any => ({
@@ -282,6 +309,19 @@ export default function SideNav({ collapsed, setCollapsed, isMobile = false }: S
                         });
                         return formatItem(item);
                     })}
+=======
+                    items={filteredMenuItems.map((item) => ({
+                        key: item.key,
+                        icon: (
+                            <span style={{ fontSize: 20 }}>
+                                {item.icon}
+                            </span>
+                        ),
+                        label: collapsed ? null : <span style={{ color: '#000000', fontWeight: 500 }}>{item.label}</span>,
+                        title: '', // Disable tooltip
+                        onClick: () => handleMenuClick(item.key),
+                    }))}
+>>>>>>> 5c9e8ae (Fix import path and update tasks)
                 />
 
                 {/* Logout Button */}

@@ -10,8 +10,12 @@ export async function getUsersWithPermissions() {
     // if ((session?.user as any)?.role !== 'admin') return [];
 
     try {
+<<<<<<< HEAD
         // Cast to any to avoid TS error if client is stale regarding 'permissions' field
         const users = await (prisma.user as any).findMany({
+=======
+        const users = await prisma.user.findMany({
+>>>>>>> 5c9e8ae (Fix import path and update tasks)
             select: {
                 id: true,
                 soHieu: true,
@@ -29,6 +33,7 @@ export async function getUsersWithPermissions() {
 }
 
 
+<<<<<<< HEAD
 // Fix: Use singular 'permission' and cast to any to avoid stale client errors
 // Fix: Use singular 'permission' and cast to any to avoid stale client errors
 export async function getPermissionDefinitions() {
@@ -43,6 +48,12 @@ export async function getPermissionDefinitions() {
         return await delegate.findMany({ orderBy: { group: 'asc' } });
     } catch (error) {
         console.error('Error fetching permissions:', error);
+=======
+export async function getPermissionDefinitions() {
+    try {
+        return await prisma.permission.findMany({ orderBy: { group: 'asc' } });
+    } catch (error) {
+>>>>>>> 5c9e8ae (Fix import path and update tasks)
         return [];
     }
 }
@@ -56,7 +67,11 @@ export async function createPermissionDefinition(formData: FormData) {
     const group = formData.get('group') as string;
 
     try {
+<<<<<<< HEAD
         await (prisma as any).permission.create({
+=======
+        await prisma.permission.create({
+>>>>>>> 5c9e8ae (Fix import path and update tasks)
             data: { code, name, group }
         });
         revalidatePath('/dashboard/phan-quyen');
@@ -68,7 +83,11 @@ export async function createPermissionDefinition(formData: FormData) {
 
 export async function deletePermissionDefinition(code: string) {
     try {
+<<<<<<< HEAD
         await (prisma as any).permission.delete({ where: { code } });
+=======
+        await prisma.permission.delete({ where: { code } });
+>>>>>>> 5c9e8ae (Fix import path and update tasks)
         revalidatePath('/dashboard/phan-quyen');
         return { success: true, message: 'Đã xóa quyền' };
     } catch (e) {
@@ -82,10 +101,17 @@ export async function updateUserPermissions(userId: string, permissions: string[
     // if ((session?.user as any)?.role !== 'admin') return { success: false, message: 'Unauthorized' };
 
     try {
+<<<<<<< HEAD
         await (prisma.user as any).update({
             where: { id: userId },
             data: {
                 permissions: permissions
+=======
+        await prisma.user.update({
+            where: { id: userId },
+            data: {
+                permissions: permissions // Prisma Json handles array automatically? Yes.
+>>>>>>> 5c9e8ae (Fix import path and update tasks)
             }
         });
         revalidatePath('/dashboard/phan-quyen');
@@ -99,7 +125,11 @@ export async function updateUserPermissions(userId: string, permissions: string[
 export async function copyUserPermissions(sourceUserId: string, targetUserIds: string[]) {
     try {
         // 1. Get Source Permissions
+<<<<<<< HEAD
         const sourceUser = await (prisma.user as any).findUnique({
+=======
+        const sourceUser = await prisma.user.findUnique({
+>>>>>>> 5c9e8ae (Fix import path and update tasks)
             where: { id: sourceUserId },
             select: { permissions: true }
         });
@@ -111,7 +141,13 @@ export async function copyUserPermissions(sourceUserId: string, targetUserIds: s
         const permissionsToCopy = sourceUser.permissions || [];
 
         // 2. Update All Targets
+<<<<<<< HEAD
         await (prisma.user as any).updateMany({
+=======
+        // Use updateMany? No, updateMany doesn't support setting Json for specific logic sometimes, but strict set should work.
+        // Prisma updateMany for Json: set value.
+        await prisma.user.updateMany({
+>>>>>>> 5c9e8ae (Fix import path and update tasks)
             where: {
                 id: { in: targetUserIds }
             },
